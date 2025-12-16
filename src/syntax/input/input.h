@@ -9,14 +9,15 @@ PROGRAM = CMND+
 CMND ::= IFS | (EXPRESSION';')
 EXPRESSION ::= VAR '=' VALUE | FUNCTION
     VALUE ::= FUNCTION | NUMBER_EXPR
-    FUNCTION ::= "str" " str"+
+    FUNCTION ::= "str" "str"+
 
     NUMBER_EXPR ::= PRIMARY ([+-]PRIMARY)*
     PRIMARY ::= BLOCK ([/*]BLOCK)*
     BLOCK ::= NUMBER|VAR|'('NUMBER_EXPR')'
 
     VAR = "str"
-IFS ::= "if" '(' NUMBER_EXPR ')' '{' PROGRAM '}'
+IFS ::= "if" '(' NUMBER_EXPR CONDITIONAL_OPERATOR NUMBER_EXPR ')' '{' PROGRAM '}'
+CONDITIONAL_OPERATOR ::= < | != | ==
  */
 
 typedef union TDtokenValue {
@@ -35,7 +36,8 @@ const int MAX_TOKENS = 4096;
 typedef struct TDtokenContext {
     TDtoken_t* tokens[MAX_TOKENS] = {};
     int index = 0;
-    int line = 0;
+    int line = 1;
+    int lineIndex = 0;
     wchar_t* buffer;
     wchar_t* start;
 } TDtokenContext_t;

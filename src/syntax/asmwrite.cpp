@@ -83,6 +83,10 @@ int writeAsm(treeNode_t* node) {
                     wprintf(L"OUT\n");
                     break;
                 }
+                case TD_HLT: {
+                    wprintf(L"HLT\n");
+                    break;
+                }
                 default: {
                     PRINTERR("invalid operation");
                     return DSL_INVALID_INPUT;
@@ -124,11 +128,28 @@ int writeAsm(treeNode_t* node) {
                         return DSL_INVALID_INPUT;
                     }
 
-                    SAFE_CALL(writeNumberExpression(condition));
+                    SAFE_CALL(writeNumberExpression(getLeft(condition)));
+                    SAFE_CALL(writeNumberExpression(getRight(condition)));
 
-                    wprintf(L"PUSH 0\n");
                     int labelVal = label++;
-                    wprintf(L"JE IF_END_%d\n", labelVal);
+                    switch (getData(condition).operation) {
+                        case TD_EQUALS: {
+                            wprintf(L"JNE");
+                            break;
+                        }
+                        case TD_NOT_EQUALS: {
+                            wprintf(L"JE");
+                            break;
+                        }
+                        case TD_LESS_THAN: {
+                            wprintf(L"JAE");
+                            break;
+                        }
+                        default: {
+                            RETURN_ERR(DSL_INVALID_INPUT, "invalid operation");
+                        }
+                    }
+                    wprintf(L" :IF_END_%d\n", labelVal);
                     SAFE_CALL(writeAsm(code));
                     wprintf(L":IF_END_%d\n", labelVal);
                     break;

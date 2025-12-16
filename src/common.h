@@ -92,6 +92,8 @@ typedef enum TDtokenType {
     TD_MINUS          ,
     TD_MULTIPLY       ,
     TD_DIVIDE         ,
+    TD_LESS_THAN      ,
+    TD_NOT_EQUALS     ,
     TD_IF             ,
     TD_SEMICOLON      ,
     TD_EQUALS         ,
@@ -99,6 +101,7 @@ typedef enum TDtokenType {
     TD_CLOSING_BRACKET,
     TD_INPUT          ,
     TD_PRINT          ,
+    TD_HLT            ,
     TD_NUMBER         ,
     TD_STRING         ,
 } TDtokenType_t;
@@ -113,13 +116,16 @@ const TDtokenTypeInfo_t TD_TOKENS_INFO[] = {
     {TD_MINUS,           L"-"               },
     {TD_MULTIPLY,        L"*"               },
     {TD_DIVIDE,          L"/"               },
-    {TD_IF,              L"ШНЕЙНЕ"         },
+    {TD_LESS_THAN,       L"ВОТАФА"           },
+    {TD_NOT_EQUALS,      L"ОПП"             },
+    {TD_IF,              L"ШНЕЙНЕ"          },
     {TD_SEMICOLON,       L"ФА"              },
     {TD_EQUALS,          L"ПЕПЕ"            },
     {TD_OPENING_BRACKET, L"ЛЕВАЯ_НОГА"      },
     {TD_CLOSING_BRACKET, L"ПРАВАЯ_НОГА"     },
     {TD_INPUT,           L"ХОЧУ_ВЫСТРЕЛ"    },
     {TD_PRINT,           L"ЕСТЬ_ЧТО_СКАЗАТЬ"},
+    {TD_HLT,             L"ДРОПАЙ"          },
 };
 const size_t TD_TOKENS_INFO_SIZE = sizeof(TD_TOKENS_INFO)/sizeof(TDtokenTypeInfo_t);
 

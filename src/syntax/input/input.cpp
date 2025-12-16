@@ -49,6 +49,7 @@ void initTokenContext(TDtokenContext_t* tokenContext, wchar_t* buffer) {
 
     tokenContext->buffer = buffer;
     tokenContext->start = buffer;
+    tokenContext->line = 1;
 }
 void setNewToken(TDtokenContext_t* tokenContext, TDtoken_t* token) {
     assert(token);
@@ -99,13 +100,25 @@ TDtokenContext_t* parseTokens(wchar_t* buffer) {
 
     while (curChar(tokenContext) != '\0') {
         skipSpaces(tokenContext);
-        if (isdigit(curChar(tokenContext))) {
-            int n = 0;
-            double input = NAN;
-            swscanf(getBuffer(tokenContext), L"%lf%n", &input, &n);
+        if ((curChar(tokenContext) == '-' && isdigit(*(tokenContext->buffer + 1)))
+            || isdigit(curChar(tokenContext))) {
+            if (curChar(tokenContext) == '-') {
+                moveBuffer(tokenContext, 1);
+                int n = 0;
+                double input = NAN;
+                swscanf(getBuffer(tokenContext), L"%lf%n", &input, &n);
 
-            setNewToken(tokenContext, createNumberToken(TD_NUMBER, input, tokenContext));
-            moveBuffer(tokenContext, n);
+                setNewToken(tokenContext, createNumberToken(TD_NUMBER, -input, tokenContext));
+                moveBuffer(tokenContext, n);
+            }
+            else {
+                int n = 0;
+                double input = NAN;
+                swscanf(getBuffer(tokenContext), L"%lf%n", &input, &n);
+
+                setNewToken(tokenContext, createNumberToken(TD_NUMBER, input, tokenContext));
+                moveBuffer(tokenContext, n);
+            }
         }
         else {
             wchar_t input[MAX_LINE_LENGTH] = {};
@@ -180,6 +193,7 @@ void skipSpaces(TDtokenContext_t* tokenContext) {
         }
         moveBuffer(tokenContext, 1);
         (tokenContext->line)++;
+        skipSpaces(tokenContext);
     }
 }
 

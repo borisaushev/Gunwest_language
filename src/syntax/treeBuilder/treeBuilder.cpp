@@ -19,6 +19,7 @@ TDtoken_t* nextToken(TDtokenContext_t* context) {
 }
 
 void dumpContext(TDtokenContext_t* context) {
+#ifdef DEBUG
     printf("Context:\n    [");
     for (int i = 0; context->tokens[i] != NULL; i++) {
         if (i == context->index) {
@@ -51,6 +52,7 @@ void dumpContext(TDtokenContext_t* context) {
         printf(", ");
     }
     printf("]\n");
+#endif
 }
 
 treeNode_t* getNumber(TDtokenContext_t* context) {
@@ -124,7 +126,9 @@ treeNode_t* getNumberExpression(TDtokenContext_t* context) {
     }
     dumpContext(context);
     while (getCurToken(context) != NULL &&
-        (getCurToken(context)->type == TD_PLUS || getCurToken(context)->type == TD_MINUS)) {
+        (getCurToken(context)->type == TD_PLUS
+      || getCurToken(context)->type == TD_MINUS
+      || getCurToken(context)->type == TD_LESS_THAN)) {
         TDtokenType_t tokenType = getCurToken(context)->type;
         nextToken(context);
         dumpContext(context);
@@ -203,6 +207,12 @@ treeNode_t* getExpression(TDtokenContext_t* context) {
         return createOperation(TD_PRINT, createParameter(nextToken(context)->value.str), NULL);
     }
 
+    if (getCurToken(context)->type == TD_HLT) {
+        DPRINTF("parsed hlt expression\n");
+        nextToken(context);
+        return createOperation(TD_HLT, NULL, NULL);
+    }
+
     treeNode_t* parameter = getParameter(context);
     if (parameter == NULL) {
         PRINTERR("expected var name in lang expression. Invalid character at %s:%d:%d\n",
@@ -256,9 +266,25 @@ treeNode_t* getIfs(TDtokenContext_t* context) {
     }
     nextToken(context);
 
-    treeNode_t* expression = getNumberExpression(context);
-    if (expression == NULL) {
+    treeNode_t* numberExpr1 = getNumberExpression(context);
+    if (numberExpr1 == NULL) {
         DPRINTF("unable to parse ifs expression\n");
+        return NULL;
+    }
+
+
+    TDtokenType_t cOperator = getCurToken(context)->type;
+    if (getCurToken(context) == NULL
+    || (cOperator != TD_EQUALS && cOperator != TD_LESS_THAN && cOperator != TD_NOT_EQUALS)) {
+        PRINTERR("expected conditional operator. Invalid character at %s:%d:%d\n",
+                                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+        return NULL;
+    }
+    nextToken(context);
+
+    treeNode_t* numberExpr2 = getNumberExpression(context);
+    if (numberExpr2 == NULL) {
+        DPRINTF("unable to parse ifs second expression\n");
         return NULL;
     }
 
@@ -295,7 +321,7 @@ treeNode_t* getIfs(TDtokenContext_t* context) {
     DPRINTF("parsed if with code\n");
     dumpContext(context);
 
-    return createExpression(TD_IFS, expression, code);
+    return createExpression(TD_IFS, createOperation(cOperator, numberExpr1, numberExpr2), code);
 }
 
 treeNode_t* getCommand(TDtokenContext_t* context) {
@@ -343,6 +369,7 @@ treeNode_t* buildTree(TDtokenContext_t* context) {
     if (getCurToken(context) != NULL) {
         PRINTERR("expected end of the program. Invalid character at %s:%d:%d\n",
                          TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+        dumpContext(context);
         return NULL;
     }
     TREE_DUMP(root, "parsed tree", DSL_SUCCESS);
