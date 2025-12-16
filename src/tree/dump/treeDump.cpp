@@ -2,9 +2,50 @@
 #include "treeDump.h"
 
 #include <cstdarg>
+#include <string.h>
+#include <wchar.h>
 
 #include "input.h"
 #include "stack.h"
+
+
+static char* transliterate(const wchar_t* wstr) {
+    if (!wstr) return NULL;
+
+    size_t len = wcslen(wstr);
+    char* result = (char*)malloc(len * 2 + 1); // Максимум 2 символа на кириллицу
+    if (!result) return NULL;
+
+    int pos = 0;
+    for (size_t i = 0; i < len; i++) {
+        wchar_t c = towupper(wstr[i]);
+
+        // Кириллица верхний регистр
+        if (c >= L'А' && c <= L'Я') {
+            const char* trans[] = {
+                "A","B","V","G","D","E","ZH","Z","I","Y","K","L","M",
+                "N","O","P","R","S","T","U","F","KH","TS","CH","SH","SCH",
+                "", "Y", "", "E","YU","YA"
+            };
+            int idx = c - L'А';
+            if (idx >= 0 && idx < 32) {
+                strcpy(result + pos, trans[idx]);
+                pos += strlen(trans[idx]);
+            }
+        }
+        // Ё и ё
+        else if (c == L'Ё' || c == L'ё') {
+            strcpy(result + pos, "YO");
+            pos += 2;
+        }
+        else {
+            result[pos++] = (char)c;
+        }
+    }
+
+    result[pos] = '\0';
+    return result;
+}
 
 static void addNodeInfo(FILE* file, int index, treeNode_t* node, const char* const fillColor) {
     fprintf(file, "Node_%d [shape=Mrecord; style=filled; fillcolor = \"%s\"; "
@@ -20,14 +61,40 @@ static void addNodeInfo(FILE* file, int index, treeNode_t* node, const char* con
         }
         case OPERATION_TYPE: {
             fprintf(file, "| type: OPERATION | val: ");
-            //TODO
-            fprintf(file, "%ls", TD_TOKENS_INFO[getData(node).operation].representation);
+            for (size_t i = 0; i < TD_TOKENS_INFO_SIZE; i++) {
+                if (TD_TOKENS_INFO[i].tokenType == node->data.operation) {
+                    fprintf(file, "%s", transliterate(TD_TOKENS_INFO[i].representation));
+                    break;
+                }
+            }
             fprintf(file, " | ");
+            break;
+        }
+        case EXPRESSION_TYPE: {
+            fprintf(file, "| type: EXPRESSION | val: ");
+            switch (getData(node).expressionType) {
+                case TD_IFS: {
+                    fprintf(file, "IF | ");
+                    break;
+                }
+                case TD_DECLARATION: {
+                    fprintf(file, "DECLARATION | ");
+                    break;
+                }
+                default: {
+                    PRINTERR("invalid expression type");
+                    break;
+                }
+            }
             break;
         }
         case PARAM_TYPE: {
             dslParameter_t* param = getData(node).parameter;
-            fprintf(file, "| type: PARAMETER | %s = %d | ", param->name, param->value);
+            fprintf(file, "| type: PARAMETER | %s = %d | ", transliterate(param->name), param->value);
+            break;
+        }
+        case LINKER_TYPE: {
+            fprintf(file, "| type: LINKER | ");
             break;
         }
         default: {

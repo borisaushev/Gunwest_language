@@ -87,18 +87,48 @@ const char* const NULL_NODE_STRING = "nil";
 
 const char* const TD_FILE_PATH = "../files/durden/durden.bb";
 
-typedef enum calcOperation {
-    NODE_ADD,
-    NODE_SUB,
-    NODE_MUL,
-    NODE_DIV,
-} calcOperation_t;
+typedef enum TDtokenType {
+    TD_PLUS           ,
+    TD_MINUS          ,
+    TD_MULTIPLY       ,
+    TD_DIVIDE         ,
+    TD_IF             ,
+    TD_SEMICOLON      ,
+    TD_EQUALS         ,
+    TD_OPENING_BRACKET,
+    TD_CLOSING_BRACKET,
+    TD_INPUT          ,
+    TD_PRINT          ,
+    TD_NUMBER         ,
+    TD_STRING         ,
+} TDtokenType_t;
+
+typedef struct TDtokenTypeInfo {
+    TDtokenType_t tokenType;
+    const wchar_t* representation;
+} TDtokenTypeInfo_t;
+
+const TDtokenTypeInfo_t TD_TOKENS_INFO[] = {
+    {TD_PLUS,            L"+"               },
+    {TD_MINUS,           L"-"               },
+    {TD_MULTIPLY,        L"*"               },
+    {TD_DIVIDE,          L"/"               },
+    {TD_IF,              L"ШНЕЙНЕ"         },
+    {TD_SEMICOLON,       L"ФА"              },
+    {TD_EQUALS,          L"ПЕПЕ"            },
+    {TD_OPENING_BRACKET, L"ЛЕВАЯ_НОГА"      },
+    {TD_CLOSING_BRACKET, L"ПРАВАЯ_НОГА"     },
+    {TD_INPUT,           L"ХОЧУ_ВЫСТРЕЛ"    },
+    {TD_PRINT,           L"ЕСТЬ_ЧТО_СКАЗАТЬ"},
+};
+const size_t TD_TOKENS_INFO_SIZE = sizeof(TD_TOKENS_INFO)/sizeof(TDtokenTypeInfo_t);
 
 typedef enum nodeType {
     OPERATION_TYPE,
     NUMBER_TYPE,
     PARAM_TYPE,
-    FUNCTION_TYPE,
+    EXPRESSION_TYPE,
+    LINKER_TYPE,
 } nodeType_t;
 
 typedef struct dslParameter {
@@ -107,10 +137,16 @@ typedef struct dslParameter {
     int value;
 } dslParameter_t;
 
+typedef enum TDexpressionType {
+    TD_IFS,
+    TD_DECLARATION,
+} TDexpressionType_t;
+
 union nodeData {
     int number;
     dslParameter_t* parameter;
-    calcOperation_t operation;
+    TDexpressionType expressionType;
+    TDtokenType_t operation;
 };
 
 typedef nodeData treeElType_t;

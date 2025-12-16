@@ -1,0 +1,149 @@
+#include "asmwrite.h"
+
+#include "common.h"
+#include "treeDump.h"
+#include "treeSctruct.h"
+
+wchar_t getReg(treeNode_t * param) {
+    assert(param);
+    assert(param->nodeType == PARAM_TYPE);
+
+    int index = getParameterIndex(param->data.parameter);
+    return (wchar_t) (L'A' + index);
+}
+
+int writeNumberExpression(treeNode_t* node) {
+    assert(node);
+    TREE_DUMP(node, "writing Number Expression", DSL_SUCCESS);
+    switch (node->nodeType) {
+        case NUMBER_TYPE: {
+            wprintf(L"PUSH %d\n", getNumber(node));
+            return DSL_SUCCESS;
+        }
+        case OPERATION_TYPE: {
+            SAFE_CALL(writeNumberExpression(getLeft(node)));
+            SAFE_CALL(writeNumberExpression(getRight(node)));
+            switch (getData(node).operation) {
+                case TD_PLUS: {
+                    wprintf(L"ADD\n");
+                    break;
+                }
+                case TD_MINUS: {
+                    wprintf(L"SUB\n");
+                    break;
+                }
+                case TD_MULTIPLY: {
+                    wprintf(L"MUL\n");
+                    break;
+                }
+                case TD_DIVIDE: {
+                    wprintf(L"DIV\n");
+                    break;
+                }
+                default: {
+                    PRINTERR("invalid operation");
+                    return DSL_INVALID_INPUT;
+                }
+            }
+            return DSL_SUCCESS;
+        }
+        case PARAM_TYPE: {
+            wprintf(L"PUSHREG %lcX\n", getReg(node));
+            return DSL_SUCCESS;
+        }
+        default: {
+            PRINTERR("invalid node type");
+            return DSL_INVALID_INPUT;
+        }
+    }
+    return DSL_SUCCESS;
+}
+
+int writeAsm(treeNode_t* node) {
+    static int label = 0;
+    if (node == NULL) {
+        return DSL_SUCCESS;
+    }
+    TREE_DUMP(node, "writing asm", DSL_SUCCESS);
+    switch (node->nodeType) {
+        case LINKER_TYPE: {
+            SAFE_CALL(writeAsm(getRight(node)));
+            SAFE_CALL(writeAsm(getLeft(node)));
+            break;
+        }
+        case OPERATION_TYPE: {
+            switch (getData(node).operation) {
+                case TD_PRINT: {
+                    treeNode_t* param = getLeft(node);
+                    if (param == NULL || param->nodeType != PARAM_TYPE) {
+                        PRINTERR("invalid print argument");
+                        return DSL_INVALID_INPUT;
+                    }
+                    wprintf(L"PUSHREG %lcX\n", getReg(param));
+                    wprintf(L"OUT\n");
+                    break;
+                }
+                default: {
+                    PRINTERR("invalid operation");
+                    return DSL_INVALID_INPUT;
+                }
+            }
+            break;
+        }
+        case EXPRESSION_TYPE: {
+            switch (getData(node).expressionType) {
+                case TD_DECLARATION: {
+                    treeNode_t* value = getRight(node);
+                    treeNode_t* parameter = getLeft(node);
+                    if (value == NULL) {
+                        PRINTERR("expected value in declaration\n");
+                        return DSL_INVALID_INPUT;
+                    }
+                    if (parameter == NULL) {
+                        PRINTERR("expected parameter in declaration\n");
+                        return DSL_INVALID_INPUT;
+                    }
+                    if (getData(value).operation == TD_INPUT) {
+                        wprintf(L"IN\n");
+                    }
+                    else {
+                        SAFE_CALL(writeNumberExpression(value));
+                    }
+                    wprintf(L"POPREG %lcX\n", getReg(parameter));
+                    break;
+                }
+                case TD_IFS: {
+                    treeNode_t* condition = getLeft(node);
+                    treeNode_t* code = getRight(node);
+                    if (condition == NULL) {
+                        PRINTERR("expected condition in if\n");
+                        return DSL_INVALID_INPUT;
+                    }
+                    if (code == NULL) {
+                        PRINTERR("expected code in if\n");
+                        return DSL_INVALID_INPUT;
+                    }
+
+                    SAFE_CALL(writeNumberExpression(condition));
+
+                    wprintf(L"PUSH 0\n");
+                    int labelVal = label++;
+                    wprintf(L"JE IF_END_%d\n", labelVal);
+                    SAFE_CALL(writeAsm(code));
+                    wprintf(L":IF_END_%d\n", labelVal);
+                    break;
+                }
+                default: {
+                    PRINTERR("invalid expression type");
+                    return DSL_INVALID_INPUT;
+                }
+            }
+            break;
+        }
+        default: {
+            PRINTERR("invalid operation");
+            return DSL_INVALID_INPUT;
+        }
+    }
+    return DSL_SUCCESS;
+}

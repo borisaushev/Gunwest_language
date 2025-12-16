@@ -135,7 +135,7 @@ TDtokenContext_t* parseTokens(wchar_t* buffer) {
         printf("%d: ", i);
         for (int j = 0; j < TD_TOKENS_INFO_SIZE; j++) {
             if (TD_TOKENS_INFO[j].tokenType == tokenContext->tokens[i]->type) {
-                wprintf(L"%ls ", TD_TOKENS_INFO[j].representation);
+                wprintf(L"command: %ls\n", TD_TOKENS_INFO[j].representation);
                 found = true;
                 break;
             }
@@ -144,10 +144,10 @@ TDtokenContext_t* parseTokens(wchar_t* buffer) {
             continue;
         }
         if (tokenContext->tokens[i]->type == TD_NUMBER) {
-            printf("%g ", tokenContext->tokens[i]->value.number);
+            printf("number: %g\n", tokenContext->tokens[i]->value.number);
         }
         else if (tokenContext->tokens[i]->type == TD_STRING) {
-            wprintf(L"%ls ", tokenContext->tokens[i]->value.str);
+            wprintf(L"string: %ls", tokenContext->tokens[i]->value.str);
         }
         else {
             PRINTERR("bbq chicken alert");

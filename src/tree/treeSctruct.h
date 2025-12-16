@@ -7,11 +7,14 @@ const int DSL_MAX_PARAMETERS = 100;
 
 size_t getParametersCount();
 dslParameter_t* getParameter(size_t index);
+int getParameterIndex(dslParameter_t* param);
 
 treeNode_t* createNumber(int value);
-treeNode_t* createOperation(calcOperation_t operation, treeNode* left, treeNode* right);
+treeNode_t* createOperation(TDtokenType_t operation, treeNode* left, treeNode* right);
 treeNode_t* createParameter(wchar_t* param);
+treeNode_t* createLinker(treeNode_t* left, treeNode* right);
 treeNode_t* createNode(nodeData data, nodeType_t nodeType, treeNode* left, treeNode* right);
+treeNode_t* createExpression(TDexpressionType_t expressionType, treeNode* left, treeNode* right);
 
 void initDslParametersValues();
 
@@ -30,8 +33,7 @@ void setNumber(treeNode_t* node, int value);
 dslParameter_t *getParameter(treeNode *node);
 void setParameter(treeNode_t* node, dslParameter_t* parameter);
 
-calcOperation_t getOperation(treeNode* node);
-void setOperation(treeNode_t* node, calcOperation_t operation);
+void setOperation(treeNode_t* node, TDtokenType_t operation);
 
 nodeType_t getNodeType(treeNode_t* node);
 void setNodeType(treeNode_t* node, nodeType_t nodeType);

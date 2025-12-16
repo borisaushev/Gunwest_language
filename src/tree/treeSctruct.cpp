@@ -19,6 +19,15 @@ dslParameter_t* getParameter(size_t index) {
     return &dslParameters[index];
 }
 
+int getParameterIndex(dslParameter_t* param) {
+    for (size_t i = 0; i < dslParametersCount; i++) {
+        if (param->hash == dslParameters[i].hash) {
+            return (int) i;
+        }
+    }
+    return -1;
+}
+
 treeNode_t* getRight(treeNode_t* node) {
     assert(node);
     return node->right;
@@ -68,11 +77,11 @@ void setParameter(treeNode_t* node, dslParameter_t* parameter) {
     (node->data).parameter = parameter;
 }
 
-calcOperation_t getOperation(treeNode* node) {
+TDtokenType_t getOperation(treeNode* node) {
     assert(node);
     return getData(node).operation;
 }
-void setOperation(treeNode_t* node, calcOperation_t operation) {
+void setOperation(treeNode_t* node, TDtokenType_t operation) {
     assert(node);
     node->data.operation = operation;
 }
@@ -108,20 +117,13 @@ treeNode_t* createParameter(wchar_t* param) {
         }
     }
     if (result->data.parameter == NULL) {
-        wprintf(L"what's the value of parameter '%ls'?  ", param);
-        int value = 0;
-        if (scanf("%d", &value) != 1) {
-            printf("Nepravilno nabran nomer\n");
-            return NULL;
-        }
         dslParameters[dslParametersCount].name = wcsdup(param);
         dslParameters[dslParametersCount].hash = hash;
-        dslParameters[dslParametersCount].value = value;
+        dslParameters[dslParametersCount].value = DSL_POISON;
         result->data.parameter = &dslParameters[dslParametersCount];
 
         dslParametersCount++;
     }
-    printf("\n");
     result->nodeType = PARAM_TYPE;
     result->left = NULL;
     result->right = NULL;
@@ -130,7 +132,7 @@ treeNode_t* createParameter(wchar_t* param) {
 }
 
 treeNode_t* createNumber(int value) {
-    treeNode_t* result = (treeNode_t*)calloc(1, sizeof(treeNode_t));
+    treeNode_t* result = (treeNode_t*) calloc(1, sizeof(treeNode_t));
     result->nodeType = NUMBER_TYPE;
     result->left = NULL;
     result->right = NULL;
@@ -140,8 +142,8 @@ treeNode_t* createNumber(int value) {
     return result;
 }
 
-treeNode_t* createOperation(calcOperation_t operation, treeNode* left, treeNode* right) {
-    treeNode_t* result = (treeNode_t*)calloc(1, sizeof(treeNode_t));
+treeNode_t* createOperation(TDtokenType_t operation, treeNode* left, treeNode* right) {
+    treeNode_t* result = (treeNode_t*) calloc(1, sizeof(treeNode_t));
     result->nodeType = OPERATION_TYPE;
     result->left = left;
     result->right = right;
@@ -151,8 +153,30 @@ treeNode_t* createOperation(calcOperation_t operation, treeNode* left, treeNode*
     return result;
 }
 
+treeNode_t* createExpression(TDexpressionType_t expressionType, treeNode* left, treeNode* right) {
+    treeNode_t* result = (treeNode_t*) calloc(1, sizeof(treeNode_t));
+    result->nodeType = EXPRESSION_TYPE;
+    result->left = left;
+    result->right = right;
+
+    result->data = {.expressionType = expressionType};
+
+    return result;
+}
+
+treeNode_t* createLinker(treeNode_t* left, treeNode* right) {
+    treeNode_t* result = (treeNode_t*) calloc(1, sizeof(treeNode_t));
+    result->nodeType = LINKER_TYPE;
+    result->left = left;
+    result->right = right;
+
+    result->data = {};
+
+    return result;
+}
+
 treeNode_t* createNode(nodeData data, nodeType_t nodeType, treeNode* left, treeNode* right) {
-    treeNode_t* result = (treeNode_t*)calloc(1, sizeof(treeNode_t));
+    treeNode_t* result = (treeNode_t*) calloc(1, sizeof(treeNode_t));
     result->nodeType = nodeType;
     result->left = left;
     result->right = right;

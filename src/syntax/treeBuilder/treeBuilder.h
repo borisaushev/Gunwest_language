@@ -3,6 +3,7 @@
 #include "input.h"
 
 
-treeNode_t* buildTree(TDtokenContext_t* tokenContext);
+treeNode_t* buildTree(TDtokenContext_t* context);
+treeNode_t* getProgram(TDtokenContext_t* context);
 
 #endif //TYLERDURDEN_TREEBUILDER_H

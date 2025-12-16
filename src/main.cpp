@@ -1,5 +1,7 @@
 
 #include <windows.h>
+
+#include "asmwrite.h"
 #include "treeDump.h"
 #include "input.h"
 #include "treeBuilder/treeBuilder.h"
@@ -24,7 +26,9 @@ int main() {
     wprintf(L"read buffer: %ls\n", buffer);
 
     TDtokenContext_t* tokenContext = parseTokens(buffer);
-    buildTree(tokenContext);
+    treeNode_t* root = buildTree(tokenContext);
+
+    writeAsm(root);
 
     return 0;
 }

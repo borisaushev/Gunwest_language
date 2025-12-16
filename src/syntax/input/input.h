@@ -7,9 +7,9 @@
 PROGRAM = CMND+
 
 CMND ::= IFS | (EXPRESSION';')
-EXPRESSION ::= VAR '=' VALUE
-    VALUE ::= STDFUNC | NUMBER_EXPR
-    STDFUNC ::= printf|scanf
+EXPRESSION ::= VAR '=' VALUE | FUNCTION
+    VALUE ::= FUNCTION | NUMBER_EXPR
+    FUNCTION ::= "str" " str"+
 
     NUMBER_EXPR ::= PRIMARY ([+-]PRIMARY)*
     PRIMARY ::= BLOCK ([/*]BLOCK)*
@@ -18,43 +18,6 @@ EXPRESSION ::= VAR '=' VALUE
     VAR = "str"
 IFS ::= "if" '(' NUMBER_EXPR ')' '{' PROGRAM '}'
  */
-
-
-typedef enum TDtokenType {
-    TD_PLUS           ,
-    TD_MINUS          ,
-    TD_MULTIPLY       ,
-    TD_DIVIDE         ,
-    TD_IF             ,
-    TD_SEMICOLON      ,
-    TD_EQUALS         ,
-    TD_OPENING_BRACKET,
-    TD_CLOSING_BRACKET,
-    TD_INPUT          ,
-    TD_PRINT          ,
-    TD_NUMBER         ,
-    TD_STRING         ,
-} TDtokenType_t;
-
-typedef struct TDtokenTypeInfo {
-    TDtokenType_t tokenType;
-    const wchar_t* representation;
-} TDtokenTypeInfo_t;
-
-const TDtokenTypeInfo_t TD_TOKENS_INFO[] = {
-    {TD_PLUS,            L"+"               },
-    {TD_MINUS,           L"-"               },
-    {TD_MULTIPLY,        L"*"               },
-    {TD_DIVIDE,          L"/"               },
-    {TD_IF,              L"ШНЕЙНЕ?"         },
-    {TD_SEMICOLON,       L"ФА"              },
-    {TD_EQUALS,          L"ПЕПЕ"            },
-    {TD_OPENING_BRACKET, L"ЛЕВАЯ_НОГА"      },
-    {TD_CLOSING_BRACKET, L"ПРАВАЯ_НОГА"     },
-    {TD_INPUT,           L"ХОЧУ_ВЫСТРЕЛ"    },
-    {TD_PRINT,           L"ЕСТЬ_ЧТО_СКАЗАТЬ"},
-};
-const size_t TD_TOKENS_INFO_SIZE = sizeof(TD_TOKENS_INFO)/sizeof(TDtokenTypeInfo_t);
 
 typedef union TDtokenValue {
     wchar_t* str;
@@ -81,7 +44,7 @@ TDtokenContext_t* parseTokens(wchar_t* buffer);
 
 long getFileSize(const char* filename);
 void skipSpaces(TDtokenContext* tokenContext);
-void dumpBuffer(char** curPos, const char* buffer);
+void dumpBuffer(wchar_t **curPos, const wchar_t *buffer);
 int readFile(const char *file_path, wchar_t** text, int* bytes_read);
 
 
