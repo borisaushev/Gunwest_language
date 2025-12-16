@@ -83,8 +83,6 @@ typedef enum dsl_error {
 
 const int MAX_LINE_LENGTH = 1000;
 
-const char* const NULL_NODE_STRING = "nil";
-
 const char* const TD_FILE_PATH = "../files/durden/durden.bb";
 
 typedef enum TDtokenType {
@@ -101,6 +99,7 @@ typedef enum TDtokenType {
     TD_CLOSING_BRACKET,
     TD_INPUT          ,
     TD_PRINT          ,
+    TD_SQRT           ,
     TD_HLT            ,
     TD_NUMBER         ,
     TD_STRING         ,
@@ -116,7 +115,7 @@ const TDtokenTypeInfo_t TD_TOKENS_INFO[] = {
     {TD_MINUS,           L"-"               },
     {TD_MULTIPLY,        L"*"               },
     {TD_DIVIDE,          L"/"               },
-    {TD_LESS_THAN,       L"ВОТАФА"           },
+    {TD_LESS_THAN,       L"ВОТАФА"          },
     {TD_NOT_EQUALS,      L"ОПП"             },
     {TD_IF,              L"ШНЕЙНЕ"          },
     {TD_SEMICOLON,       L"ФА"              },
@@ -125,6 +124,7 @@ const TDtokenTypeInfo_t TD_TOKENS_INFO[] = {
     {TD_CLOSING_BRACKET, L"ПРАВАЯ_НОГА"     },
     {TD_INPUT,           L"ХОЧУ_ВЫСТРЕЛ"    },
     {TD_PRINT,           L"ЕСТЬ_ЧТО_СКАЗАТЬ"},
+    {TD_SQRT,            L"АЙСГЕРГЕРБЕР"    },
     {TD_HLT,             L"ДРОПАЙ"          },
 };
 const size_t TD_TOKENS_INFO_SIZE = sizeof(TD_TOKENS_INFO)/sizeof(TDtokenTypeInfo_t);

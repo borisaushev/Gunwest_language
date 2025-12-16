@@ -126,9 +126,7 @@ treeNode_t* getNumberExpression(TDtokenContext_t* context) {
     }
     dumpContext(context);
     while (getCurToken(context) != NULL &&
-        (getCurToken(context)->type == TD_PLUS
-      || getCurToken(context)->type == TD_MINUS
-      || getCurToken(context)->type == TD_LESS_THAN)) {
+        (getCurToken(context)->type == TD_PLUS || getCurToken(context)->type == TD_MINUS)) {
         TDtokenType_t tokenType = getCurToken(context)->type;
         nextToken(context);
         dumpContext(context);
@@ -180,9 +178,20 @@ treeNode_t* getPrimaryNumberExpression(TDtokenContext_t* context) {
 treeNode_t* getValue(TDtokenContext_t* context) {
     assert(context);
     TDtoken_t* token = getCurToken(context);
-    if (token->type == TD_INPUT || token->type == TD_PRINT) {
+    if (token->type == TD_INPUT) {
         nextToken(context);
+        DPRINTF("parsed value as input command\n");
         return createOperation(token->type, NULL, NULL);
+    }
+    if (token->type == TD_SQRT) {
+        nextToken(context);
+        treeNode_t* value = getValue(context);
+        if (value == NULL) {
+            DPRINTF("unable to parse sqrt parameter\n");
+            return NULL;
+        }
+        DPRINTF("parsed value as sqrt command\n");
+        return createOperation(token->type, value, NULL);
     }
 
     return getNumberExpression(context);
@@ -268,10 +277,11 @@ treeNode_t* getIfs(TDtokenContext_t* context) {
 
     treeNode_t* numberExpr1 = getNumberExpression(context);
     if (numberExpr1 == NULL) {
-        DPRINTF("unable to parse ifs expression\n");
+        DPRINTF("unable to parse ifs first expression\n");
         return NULL;
     }
-
+    DPRINTF("parsed ifs first expression\n");
+    dumpContext(context);
 
     TDtokenType_t cOperator = getCurToken(context)->type;
     if (getCurToken(context) == NULL
@@ -282,11 +292,16 @@ treeNode_t* getIfs(TDtokenContext_t* context) {
     }
     nextToken(context);
 
+    DPRINTF("parsed ifs operator\n");
+    dumpContext(context);
+
     treeNode_t* numberExpr2 = getNumberExpression(context);
     if (numberExpr2 == NULL) {
         DPRINTF("unable to parse ifs second expression\n");
         return NULL;
     }
+    DPRINTF("parsed ifs second expression\n");
+    dumpContext(context);
 
     if (!verifyToken(context, TD_CLOSING_BRACKET)) {
         PRINTERR("expected closing bracket. Invalid character at %s:%d:%d\n",

@@ -4,20 +4,34 @@
 
 /*
 
+= ::= "ПЕПЕ"
+< ::= "ВОТАФА"
+!= ::= "ОПП"
+if ::= "ШНЕЙНЕ"
+; ::= "ФА"
+( ::= "ЛЕВАЯ_НОГА"
+) ::= "ПРАВАЯ_НОГА"
+input ::= "ХОЧУ_ВЫСТРЕЛ"
+print ::= "ЕСТЬ_ЧТО_СКАЗАТЬ"
+sqrt ::= "АЙСГЕРГЕРБЕР"
+hlt ::= "ДРОПАЙ"
+CONDITIONAL_OPERATOR ::= < | != | ==
+STD_COMMAND ::=  print | hlt
+STD_FUNCTION ::= input | (sqrt VALUE)
+
+
 PROGRAM = CMND+
 
-CMND ::= IFS | (EXPRESSION';')
-EXPRESSION ::= VAR '=' VALUE | FUNCTION
-    VALUE ::= FUNCTION | NUMBER_EXPR
-    FUNCTION ::= "str" "str"+
+CMND ::= IFS | (EXPRESSION;)
+EXPRESSION ::= VAR = (VALUE | STD_COMMAND)
+    VALUE ::= STD_FUNCTION | NUMBER_EXPR
 
     NUMBER_EXPR ::= PRIMARY ([+-]PRIMARY)*
     PRIMARY ::= BLOCK ([/*]BLOCK)*
-    BLOCK ::= NUMBER|VAR|'('NUMBER_EXPR')'
+    BLOCK ::= NUMBER | VAR | '('NUMBER_EXPR')'
 
-    VAR = "str"
-IFS ::= "if" '(' NUMBER_EXPR CONDITIONAL_OPERATOR NUMBER_EXPR ')' '{' PROGRAM '}'
-CONDITIONAL_OPERATOR ::= < | != | ==
+    VAR = "[A-Za-z][A-Za-z0-9]*"
+IFS ::= if '(' NUMBER_EXPR CONDITIONAL_OPERATOR NUMBER_EXPR ')' '(' PROGRAM ')'
  */
 
 typedef union TDtokenValue {

@@ -11,11 +11,14 @@ TDtoken_t* createNumberToken(TDtokenType_t type, double number, TDtokenContext_t
 
     token->type = type;
     token->value = {.number = number};
-    token->index = (int) (tokenContext->buffer - tokenContext->start + 1);
+    token->index = tokenContext->lineIndex;
     token->line = tokenContext->line;
 
     return token;
 }
+
+//Как находятся ключевые слова
+//Где описан синтаксис
 TDtoken_t* createStringToken(wchar_t* str, TDtokenContext_t* tokenContext) {
     assert(str);
     assert(tokenContext);
@@ -24,7 +27,7 @@ TDtoken_t* createStringToken(wchar_t* str, TDtokenContext_t* tokenContext) {
 
     token->type = TD_STRING;
     token->value = {.str = str};
-    token->index = (int) (tokenContext->buffer - tokenContext->start + 1);
+    token->index = tokenContext->lineIndex;
     token->line = tokenContext->line;
 
     return token;
@@ -37,7 +40,7 @@ TDtoken_t* createEmptyToken(TDtokenType_t type, TDtokenContext_t* tokenContext) 
 
     token->type = type;
     token->value = {.str = NULL};
-    token->index = (int) (tokenContext->buffer - tokenContext->start + 1);
+    token->index = tokenContext->lineIndex + 1;
     token->line = tokenContext->line;
 
     return token;
@@ -50,6 +53,7 @@ void initTokenContext(TDtokenContext_t* tokenContext, wchar_t* buffer) {
     tokenContext->buffer = buffer;
     tokenContext->start = buffer;
     tokenContext->line = 1;
+    tokenContext->lineIndex = 0;
 }
 void setNewToken(TDtokenContext_t* tokenContext, TDtoken_t* token) {
     assert(token);
@@ -69,6 +73,7 @@ wchar_t* getBuffer(TDtokenContext_t* tokenContext) {
 void moveBuffer(TDtokenContext_t* tokenContext, int n) {
     assert(tokenContext);
     tokenContext->buffer += n;
+    tokenContext->lineIndex += n;
 }
 
 void parseInput(TDtokenContext_t *tokenContext, wchar_t* input) {
@@ -184,6 +189,7 @@ void skipSpaces(TDtokenContext_t* tokenContext) {
     while (iswspace(curChar(tokenContext))) {
         if (curChar(tokenContext) == '\n') {
             (tokenContext->line)++;
+            tokenContext->lineIndex = 0;
         }
         moveBuffer(tokenContext, 1);
     }
@@ -192,13 +198,11 @@ void skipSpaces(TDtokenContext_t* tokenContext) {
             moveBuffer(tokenContext, 1);
         }
         moveBuffer(tokenContext, 1);
+        tokenContext->lineIndex = 0;
         (tokenContext->line)++;
         skipSpaces(tokenContext);
     }
 }
-
-#include <locale.h>
-#include <wchar.h>
 
 int readFile(const char *file_path, wchar_t** text, int* bytes_read) {
     FILE* file = fopen(file_path, "rb");  // Бинарный режим

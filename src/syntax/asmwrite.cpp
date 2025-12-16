@@ -59,6 +59,20 @@ int writeNumberExpression(treeNode_t* node) {
     return DSL_SUCCESS;
 }
 
+int writeValue(treeNode_t* node) {
+    if (getData(node).operation == TD_INPUT) {
+        wprintf(L"IN\n");
+    }
+    else if (getData(node).operation == TD_SQRT) {
+        SAFE_CALL(writeValue(getLeft(node)));
+        wprintf(L"SQRT\n");
+    }
+    else {
+        SAFE_CALL(writeNumberExpression(node));
+    }
+    return DSL_SUCCESS;
+}
+
 int writeAsm(treeNode_t* node) {
     static int label = 0;
     if (node == NULL) {
@@ -107,12 +121,7 @@ int writeAsm(treeNode_t* node) {
                         PRINTERR("expected parameter in declaration\n");
                         return DSL_INVALID_INPUT;
                     }
-                    if (getData(value).operation == TD_INPUT) {
-                        wprintf(L"IN\n");
-                    }
-                    else {
-                        SAFE_CALL(writeNumberExpression(value));
-                    }
+                    SAFE_CALL(writeValue(value));
                     wprintf(L"POPREG %lcX\n", getReg(parameter));
                     break;
                 }
