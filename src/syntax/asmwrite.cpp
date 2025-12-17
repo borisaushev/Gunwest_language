@@ -4,6 +4,7 @@
 #include "treeDump.h"
 #include "treeSctruct.h"
 
+int label = 0;
 wchar_t getReg(treeNode_t * param) {
     assert(param);
     assert(param->nodeType == PARAM_TYPE);
@@ -79,7 +80,7 @@ static int writeValue(treeNode_t* node) {
     return DSL_SUCCESS;
 }
 
-static int writeIf(treeNode_t *node, int &label) {
+static int writeIf(treeNode_t *node) {
     treeNode_t* condition = getLeft(node);
     treeNode_t* code = getRight(node);
     if (condition == NULL) {
@@ -115,6 +116,48 @@ static int writeIf(treeNode_t *node, int &label) {
     wprintf(L" :IF_END_%d\n", labelVal);
     SAFE_CALL(writeAsm(code));
     wprintf(L":IF_END_%d\n", labelVal);
+
+    return DSL_SUCCESS;
+}
+
+static int writeWhile(treeNode_t *node) {
+    treeNode_t* condition = getLeft(node);
+    treeNode_t* code = getRight(node);
+    if (condition == NULL) {
+        PRINTERR("expected condition in while\n");
+        return DSL_INVALID_INPUT;
+    }
+    if (code == NULL) {
+        PRINTERR("expected code in while\n");
+        return DSL_INVALID_INPUT;
+    }
+
+    int labelVal = label++;
+    wprintf(L":WHILE_START_%d\n", labelVal);
+    SAFE_CALL(writeNumberExpression(getLeft(condition)));
+    SAFE_CALL(writeNumberExpression(getRight(condition)));
+
+    switch (getData(condition).operation) {
+        case TD_EQUALS: {
+            wprintf(L"JNE");
+            break;
+        }
+        case TD_NOT_EQUALS: {
+            wprintf(L"JE");
+            break;
+        }
+        case TD_LESS_THAN: {
+            wprintf(L"JAE");
+            break;
+        }
+        default: {
+            RETURN_ERR(DSL_INVALID_INPUT, "invalid operation");
+        }
+    }
+    wprintf(L" :WHILE_END_%d\n", labelVal);
+    SAFE_CALL(writeAsm(code));
+    wprintf(L"JMP :WHILE_START_%d\n", labelVal);
+    wprintf(L":WHILE_END_%d\n", labelVal);
 
     return DSL_SUCCESS;
 }
@@ -161,14 +204,18 @@ int writeOperation(treeNode_t *node) {
     return DSL_SUCCESS;
 }
 
-static int writeExpression(treeNode_t *node, int &label) {
+static int writeExpression(treeNode_t *node) {
     switch (getData(node).expressionType) {
         case TD_DECLARATION: {
             SAFE_CALL(writeDeclaration(node));
             break;
         }
-        case TD_IFS: {
-            SAFE_CALL(writeIf(node, label));
+        case TD_IF_EXPRESSION_TYPE: {
+            SAFE_CALL(writeIf(node));
+            break;
+        }
+        case TD_WHILE_EXPRESSION_TYPE: {
+            SAFE_CALL(writeWhile(node));
             break;
         }
         default: {
@@ -181,7 +228,6 @@ static int writeExpression(treeNode_t *node, int &label) {
 }
 
 int writeAsm(treeNode_t* node) {
-    static int label = 0;
     if (node == NULL) {
         return DSL_SUCCESS;
     }
@@ -197,7 +243,7 @@ int writeAsm(treeNode_t* node) {
             break;
         }
         case EXPRESSION_TYPE: {
-            SAFE_CALL(writeExpression(node, label));
+            SAFE_CALL(writeExpression(node));
             break;
         }
         default: {

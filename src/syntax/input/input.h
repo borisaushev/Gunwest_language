@@ -8,6 +8,7 @@
 < ::= "ВОТАФА"
 != ::= "ОПП"
 if ::= "ШНЕЙНЕ"
+while ::= "ЕЩКЕРЕ"
 ; ::= "ФА"
 ( ::= "ЛЕВАЯ_НОГА"
 ) ::= "ПРАВАЯ_НОГА"
@@ -22,7 +23,7 @@ STD_FUNCTION ::= input | (sqrt VALUE)
 
 PROGRAM = CMND+
 
-CMND ::= IFS | (EXPRESSION;)
+CMND ::= IFS | WHILE | (EXPRESSION;)
 EXPRESSION ::= VAR = (VALUE | STD_COMMAND)
     VALUE ::= STD_FUNCTION | NUMBER_EXPR
 
@@ -32,6 +33,7 @@ EXPRESSION ::= VAR = (VALUE | STD_COMMAND)
 
     VAR = "[A-Za-z][A-Za-z0-9]*"
 IFS ::= if '(' NUMBER_EXPR CONDITIONAL_OPERATOR NUMBER_EXPR ')' '(' PROGRAM ')'
+WHILE ::= while '(' NUMBER_EXPR CONDITIONAL_OPERATOR NUMBER_EXPR ')' '(' PROGRAM ')'
  */
 
 typedef union TDtokenValue {

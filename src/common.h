@@ -83,7 +83,8 @@ typedef enum dsl_error {
 
 const int MAX_LINE_LENGTH = 1000;
 
-const char* const TD_FILE_PATH = "../files/durden/kvadratka.bb";
+// const char* const TD_FILE_PATH = "../files/durden/kvadratka.bb";
+const char* const TD_FILE_PATH = "../files/durden/factorial.bb";
 
 typedef enum TDtokenType {
     TD_PLUS           ,
@@ -93,6 +94,7 @@ typedef enum TDtokenType {
     TD_LESS_THAN      ,
     TD_NOT_EQUALS     ,
     TD_IF             ,
+    TD_WHILE          ,
     TD_SEMICOLON      ,
     TD_EQUALS         ,
     TD_OPENING_BRACKET,
@@ -118,6 +120,7 @@ const TDtokenTypeInfo_t TD_TOKENS_INFO[] = {
     {TD_LESS_THAN,       L"ВОТАФА"          },
     {TD_NOT_EQUALS,      L"ОПП"             },
     {TD_IF,              L"ШНЕЙНЕ"          },
+    {TD_WHILE,           L"ЕЩКЕРЕ"          },
     {TD_SEMICOLON,       L"ФА"              },
     {TD_EQUALS,          L"ПЕПЕ"            },
     {TD_OPENING_BRACKET, L"ЛЕВАЯ_НОГА"      },
@@ -144,7 +147,8 @@ typedef struct dslParameter {
 } dslParameter_t;
 
 typedef enum TDexpressionType {
-    TD_IFS,
+    TD_IF_EXPRESSION_TYPE,
+    TD_WHILE_EXPRESSION_TYPE,
     TD_DECLARATION,
 } TDexpressionType_t;
 

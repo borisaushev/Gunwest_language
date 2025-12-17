@@ -73,8 +73,12 @@ static void addNodeInfo(FILE* file, int index, treeNode_t* node, const char* con
         case EXPRESSION_TYPE: {
             fprintf(file, "| type: EXPRESSION | val: ");
             switch (getData(node).expressionType) {
-                case TD_IFS: {
+                case TD_IF_EXPRESSION_TYPE: {
                     fprintf(file, "IF | ");
+                    break;
+                }
+                case TD_WHILE_EXPRESSION_TYPE: {
+                    fprintf(file, "WHILE | ");
                     break;
                 }
                 case TD_DECLARATION: {
