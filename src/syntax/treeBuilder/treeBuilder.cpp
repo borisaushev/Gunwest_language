@@ -27,7 +27,7 @@ void dumpContext(TDtokenContext_t* context) {
         }
 
         bool found = false;
-        for (int j = 0; j < TD_TOKENS_INFO_SIZE; j++) {
+        for (size_t j = 0; j < TD_TOKENS_INFO_SIZE; j++) {
             if (TD_TOKENS_INFO[j].tokenType == context->tokens[i]->type) {
                 wprintf(L"cmnd: %ls", TD_TOKENS_INFO[j].representation);
                 found = true;
@@ -126,7 +126,7 @@ treeNode_t* getNumberExpression(TDtokenContext_t* context) {
     }
     dumpContext(context);
     while (getCurToken(context) != NULL &&
-        (getCurToken(context)->type == TD_PLUS || getCurToken(context)->type == TD_MINUS)) {
+          (getCurToken(context)->type == TD_PLUS || getCurToken(context)->type == TD_MINUS)) {
         TDtokenType_t tokenType = getCurToken(context)->type;
         nextToken(context);
         dumpContext(context);
@@ -196,32 +196,19 @@ treeNode_t* getValue(TDtokenContext_t* context) {
 
     return getNumberExpression(context);
 }
-treeNode_t* getExpression(TDtokenContext_t* context) {
-    assert(context);
-    DPRINTF("parsing lang expression\n");
 
-    if (getCurToken(context) == NULL) {
-        PRINTERR("null token, unable to parse language expression\n");
+static treeNode_t * parsePrintNode(TDtokenContext_t *context) {
+    nextToken(context);
+    if (getCurToken(context) == NULL || getCurToken(context)->type != TD_STRING) {
+        PRINTERR("null token, unable to parse print value\n");
         return NULL;
     }
 
-    if (getCurToken(context)->type == TD_PRINT) {
-        nextToken(context);
-        if (getCurToken(context) == NULL || getCurToken(context)->type != TD_STRING) {
-            PRINTERR("null token, unable to parse print value\n");
-            return NULL;
-        }
+    DPRINTF("parsed print expression\n");
+    return createOperation(TD_PRINT, createParameter(nextToken(context)->value.str), NULL);
+}
 
-        DPRINTF("parsed print expression\n");
-        return createOperation(TD_PRINT, createParameter(nextToken(context)->value.str), NULL);
-    }
-
-    if (getCurToken(context)->type == TD_HLT) {
-        DPRINTF("parsed hlt expression\n");
-        nextToken(context);
-        return createOperation(TD_HLT, NULL, NULL);
-    }
-
+static treeNode_t* parseDeclarationNode(TDtokenContext_t *context) {
     treeNode_t* parameter = getParameter(context);
     if (parameter == NULL) {
         PRINTERR("expected var name in lang expression. Invalid character at %s:%d:%d\n",
@@ -244,7 +231,7 @@ treeNode_t* getExpression(TDtokenContext_t* context) {
     treeNode_t* value = getValue(context);
     if (value == NULL) {
         PRINTERR("expected value in lang expression. Invalid character at %s:%d:%d\n",
-                         TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return NULL;
     }
 
@@ -253,28 +240,88 @@ treeNode_t* getExpression(TDtokenContext_t* context) {
     return createExpression(TD_DECLARATION, parameter, value);
 }
 
+treeNode_t* getExpression(TDtokenContext_t* context) {
+    assert(context);
+    DPRINTF("parsing lang expression\n");
+
+    if (getCurToken(context) == NULL) {
+        PRINTERR("null token, unable to parse language expression\n");
+        return NULL;
+    }
+
+    if (getCurToken(context)->type == TD_PRINT) {
+        return parsePrintNode(context);
+    }
+
+    if (getCurToken(context)->type == TD_HLT) {
+        DPRINTF("parsed hlt expression\n");
+        nextToken(context);
+        return createOperation(TD_HLT, NULL, NULL);
+    }
+
+    return parseDeclarationNode(context);
+}
+
 static bool verifyToken(TDtokenContext_t* context, TDtokenType_t tokenType) {
     assert(context);
     return getCurToken(context) != NULL && getCurToken(context)->type == tokenType;
 }
 
-treeNode_t* getIfs(TDtokenContext_t* context) {
-    assert(context);
-    DPRINTF("parsing ifs expression\n");
-
+static bool validateIfOpening(TDtokenContext_t *context) {
     if (!verifyToken(context, TD_IF)) {
         DPRINTF("expected if\n");
-        return NULL;
+        return false;
     }
     nextToken(context);
 
     if (!verifyToken(context, TD_OPENING_BRACKET)) {
         PRINTERR("expected opening bracket. Invalid character at %s:%d:%d\n",
-                         TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+        return false;
+    }
+    nextToken(context);
+
+    return true;
+}
+
+static bool validateIfClosing(TDtokenContext_t *context) {
+    if (!verifyToken(context, TD_CLOSING_BRACKET)) {
+        PRINTERR("expected closing bracket. Invalid character at %s:%d:%d\n",
+                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+        return false;
+    }
+    nextToken(context);
+
+    DPRINTF("parsed if condition and brackets\n");
+    dumpContext(context);
+
+    if (!verifyToken(context, TD_OPENING_BRACKET)) {
+        PRINTERR("expected opening bracket. Invalid character at %s:%d:%d\n",
+                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+        return false;
+    }
+    nextToken(context);
+    return true;
+}
+
+static treeNode_t * getIfCode(TDtokenContext_t *context) {
+    treeNode_t* code = getProgram(context);
+    if (code == NULL) {
+        DPRINTF("unable to parse commands in if expression\n");
+        return NULL;
+    }
+
+    if (!verifyToken(context, TD_CLOSING_BRACKET)) {
+        PRINTERR("expected closing bracket. Invalid character at %s:%d:%d\n",
+                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return NULL;
     }
     nextToken(context);
 
+    return code;
+}
+
+static treeNode_t * getIfConditionNode(TDtokenContext_t *context) {
     treeNode_t* numberExpr1 = getNumberExpression(context);
     if (numberExpr1 == NULL) {
         DPRINTF("unable to parse ifs first expression\n");
@@ -283,11 +330,11 @@ treeNode_t* getIfs(TDtokenContext_t* context) {
     DPRINTF("parsed ifs first expression\n");
     dumpContext(context);
 
-    TDtokenType_t cOperator = getCurToken(context)->type;
+    TDtokenType_t conditioner = getCurToken(context)->type;
     if (getCurToken(context) == NULL
-    || (cOperator != TD_EQUALS && cOperator != TD_LESS_THAN && cOperator != TD_NOT_EQUALS)) {
+        || (conditioner != TD_EQUALS && conditioner != TD_LESS_THAN && conditioner != TD_NOT_EQUALS)) {
         PRINTERR("expected conditional operator. Invalid character at %s:%d:%d\n",
-                                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return NULL;
     }
     nextToken(context);
@@ -302,41 +349,34 @@ treeNode_t* getIfs(TDtokenContext_t* context) {
     }
     DPRINTF("parsed ifs second expression\n");
     dumpContext(context);
+    treeNode_t* ifCondition = createOperation(conditioner, numberExpr1, numberExpr2);
 
-    if (!verifyToken(context, TD_CLOSING_BRACKET)) {
-        PRINTERR("expected closing bracket. Invalid character at %s:%d:%d\n",
-                         TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+    return ifCondition;
+}
+
+treeNode_t* getIfs(TDtokenContext_t* context) {
+    assert(context);
+    DPRINTF("parsing ifs expression\n");
+
+    if (!validateIfOpening(context)) {
         return NULL;
     }
-    nextToken(context);
 
-    DPRINTF("parsed if condition and brackets\n");
-    dumpContext(context);
+    treeNode_t* ifCondition = getIfConditionNode(context);
 
-    if (!verifyToken(context, TD_OPENING_BRACKET)) {
-        PRINTERR("expected opening bracket. Invalid character at %s:%d:%d\n",
-                         TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+    if (ifCondition == NULL || !validateIfClosing(context)) {
         return NULL;
     }
-    nextToken(context);
 
-    treeNode_t* code = getProgram(context);
+    treeNode_t* code = getIfCode(context);
     if (code == NULL) {
-        DPRINTF("unable to parse commands in if expression\n");
         return NULL;
     }
-
-    if (!verifyToken(context, TD_CLOSING_BRACKET)) {
-        PRINTERR("expected closing bracket. Invalid character at %s:%d:%d\n",
-                         TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
-        return NULL;
-    }
-    nextToken(context);
 
     DPRINTF("parsed if with code\n");
     dumpContext(context);
 
-    return createExpression(TD_IFS, createOperation(cOperator, numberExpr1, numberExpr2), code);
+    return createExpression(TD_IFS, ifCondition, code);
 }
 
 treeNode_t* getCommand(TDtokenContext_t* context) {

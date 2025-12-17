@@ -4,7 +4,7 @@
 #include "treeDump.h"
 
 
-TDtoken_t* createNumberToken(TDtokenType_t type, double number, TDtokenContext_t* tokenContext) {
+static TDtoken_t* createNumberToken(TDtokenType_t type, double number, TDtokenContext_t* tokenContext) {
     assert(tokenContext);
 
     TDtoken_t* token = (TDtoken_t*) calloc(1, sizeof(TDtoken_t));
@@ -19,7 +19,7 @@ TDtoken_t* createNumberToken(TDtokenType_t type, double number, TDtokenContext_t
 
 //Как находятся ключевые слова
 //Где описан синтаксис
-TDtoken_t* createStringToken(wchar_t* str, TDtokenContext_t* tokenContext) {
+static TDtoken_t* createStringToken(wchar_t* str, TDtokenContext_t* tokenContext) {
     assert(str);
     assert(tokenContext);
 
@@ -33,7 +33,7 @@ TDtoken_t* createStringToken(wchar_t* str, TDtokenContext_t* tokenContext) {
     return token;
 }
 
-TDtoken_t* createEmptyToken(TDtokenType_t type, TDtokenContext_t* tokenContext) {
+static TDtoken_t* createEmptyToken(TDtokenType_t type, TDtokenContext_t* tokenContext) {
     assert(tokenContext);
 
     TDtoken_t* token = (TDtoken_t*) calloc(1, sizeof(TDtoken_t));
@@ -46,7 +46,7 @@ TDtoken_t* createEmptyToken(TDtokenType_t type, TDtokenContext_t* tokenContext) 
     return token;
 }
 
-void initTokenContext(TDtokenContext_t* tokenContext, wchar_t* buffer) {
+static void initTokenContext(TDtokenContext_t* tokenContext, wchar_t* buffer) {
     assert(buffer);
     assert(tokenContext);
 
@@ -55,28 +55,28 @@ void initTokenContext(TDtokenContext_t* tokenContext, wchar_t* buffer) {
     tokenContext->line = 1;
     tokenContext->lineIndex = 0;
 }
-void setNewToken(TDtokenContext_t* tokenContext, TDtoken_t* token) {
+static void setNewToken(TDtokenContext_t* tokenContext, TDtoken_t* token) {
     assert(token);
     assert(tokenContext);
 
     tokenContext->tokens[tokenContext->index++] = token;
 }
 
-wchar_t curChar(TDtokenContext_t* tokenContext) {
+static wchar_t curChar(TDtokenContext_t* tokenContext) {
     return *(tokenContext->buffer);
 }
 
-wchar_t* getBuffer(TDtokenContext_t* tokenContext) {
+static wchar_t* getBuffer(TDtokenContext_t* tokenContext) {
     assert(tokenContext);
     return tokenContext->buffer;
 }
-void moveBuffer(TDtokenContext_t* tokenContext, int n) {
+static void moveBuffer(TDtokenContext_t* tokenContext, int n) {
     assert(tokenContext);
     tokenContext->buffer += n;
     tokenContext->lineIndex += n;
 }
 
-void parseInput(TDtokenContext_t *tokenContext, wchar_t* input) {
+static void parseInput(TDtokenContext_t *tokenContext, wchar_t* input) {
     int n = 0;
     if (iswalpha(curChar(tokenContext))) {
         while (curChar(tokenContext) != L'\0'
@@ -95,6 +95,38 @@ void parseInput(TDtokenContext_t *tokenContext, wchar_t* input) {
     }
 }
 
+void parseNumber(TDtokenContext_t *tokenContext) {
+    if (curChar(tokenContext) == '-') {
+        moveBuffer(tokenContext, 1);
+        int n = 0;
+        double input = NAN;
+        swscanf(getBuffer(tokenContext), L"%lf%n", &input, &n);
+
+        setNewToken(tokenContext, createNumberToken(TD_NUMBER, -input, tokenContext));
+        moveBuffer(tokenContext, n);
+    }
+    else {
+        int n = 0;
+        double input = NAN;
+        swscanf(getBuffer(tokenContext), L"%lf%n", &input, &n);
+
+        setNewToken(tokenContext, createNumberToken(TD_NUMBER, input, tokenContext));
+        moveBuffer(tokenContext, n);
+    }
+}
+
+bool searchForCommand(TDtokenContext_t *tokenContext, wchar_t input[MAX_LINE_LENGTH]) {
+    for (size_t i = 0; i < TD_TOKENS_INFO_SIZE; i++) {
+        if (!wcsicmp(input, TD_TOKENS_INFO[i].representation)) {
+            wprintf(L"found: %ls\n", TD_TOKENS_INFO[i].representation);
+            TDtoken_t * newToken = createEmptyToken(TD_TOKENS_INFO[i].tokenType, tokenContext);
+            setNewToken(tokenContext, newToken);
+            return true;
+        }
+    }
+    return false;
+}
+
 TDtokenContext_t* parseTokens(wchar_t* buffer) {
     TDtokenContext_t* tokenContext = (TDtokenContext_t*) calloc(1, sizeof(TDtokenContext_t));
     if (tokenContext == NULL) {
@@ -107,39 +139,14 @@ TDtokenContext_t* parseTokens(wchar_t* buffer) {
         skipSpaces(tokenContext);
         if ((curChar(tokenContext) == '-' && isdigit(*(tokenContext->buffer + 1)))
             || isdigit(curChar(tokenContext))) {
-            if (curChar(tokenContext) == '-') {
-                moveBuffer(tokenContext, 1);
-                int n = 0;
-                double input = NAN;
-                swscanf(getBuffer(tokenContext), L"%lf%n", &input, &n);
-
-                setNewToken(tokenContext, createNumberToken(TD_NUMBER, -input, tokenContext));
-                moveBuffer(tokenContext, n);
-            }
-            else {
-                int n = 0;
-                double input = NAN;
-                swscanf(getBuffer(tokenContext), L"%lf%n", &input, &n);
-
-                setNewToken(tokenContext, createNumberToken(TD_NUMBER, input, tokenContext));
-                moveBuffer(tokenContext, n);
-            }
+            parseNumber(tokenContext);
         }
         else {
             wchar_t input[MAX_LINE_LENGTH] = {};
             parseInput(tokenContext, input);
 
-            bool found = false;
             wprintf(L"searching for: %ls\n", input);
-            for (size_t i = 0; i < TD_TOKENS_INFO_SIZE; i++) {
-                if (!wcsicmp(input, TD_TOKENS_INFO[i].representation)) {
-                    wprintf(L"found: %ls\n", TD_TOKENS_INFO[i].representation);
-                    found = true;
-                    TDtoken_t * newToken = createEmptyToken(TD_TOKENS_INFO[i].tokenType, tokenContext);
-                    setNewToken(tokenContext, newToken);
-                    break;
-                }
-            }
+            bool found = searchForCommand(tokenContext, input);
             if (!found) {
                 TDtoken_t* newToken = createStringToken(wcsdup(input), tokenContext);
                 setNewToken(tokenContext, newToken);
@@ -147,31 +154,6 @@ TDtokenContext_t* parseTokens(wchar_t* buffer) {
         }
         skipSpaces(tokenContext);
     }
-
-    for (int i = 0; i < tokenContext->index; i++) {
-        bool found = false;
-        printf("%d: ", i);
-        for (int j = 0; j < TD_TOKENS_INFO_SIZE; j++) {
-            if (TD_TOKENS_INFO[j].tokenType == tokenContext->tokens[i]->type) {
-                wprintf(L"command: %ls\n", TD_TOKENS_INFO[j].representation);
-                found = true;
-                break;
-            }
-        }
-        if (found) {
-            continue;
-        }
-        if (tokenContext->tokens[i]->type == TD_NUMBER) {
-            printf("number: %g\n", tokenContext->tokens[i]->value.number);
-        }
-        else if (tokenContext->tokens[i]->type == TD_STRING) {
-            wprintf(L"string: %ls", tokenContext->tokens[i]->value.str);
-        }
-        else {
-            PRINTERR("bbq chicken alert");
-        }
-    }
-    printf("\n");
 
     return tokenContext;
 }
@@ -214,18 +196,18 @@ int readFile(const char *file_path, wchar_t** text, int* bytes_read) {
     long file_size = getFileSize(file_path);
     DPRINTF("file size: %ld bytes\n", file_size);
 
-    char *buffer = (char *)malloc(file_size + 1);
+    char *buffer = (char *)malloc((size_t) file_size + 1);
     if (!buffer) {
         fclose(file);
         RETURN_ERR(DSL_NULL_PTR, "Out of memory");
     }
 
-    size_t read_bytes = fread(buffer, 1, file_size, file);
+    size_t read_bytes = fread(buffer, 1, (size_t) file_size, file);
     buffer[read_bytes] = '\0';
     *bytes_read = (int)read_bytes;
     fclose(file);
 
-    DPRINTF("Read %ld bytes\n", *bytes_read);
+    DPRINTF("Read %d bytes\n", *bytes_read);
 
 
     *text = (wchar_t *)calloc(read_bytes + 1, sizeof(wchar_t));
@@ -240,17 +222,4 @@ int readFile(const char *file_path, wchar_t** text, int* bytes_read) {
     free(buffer);
 
     return 0;
-}
-
-void dumpBuffer(char **curPos, const char *buffer) {
-    char dumpString[MAX_LINE_LENGTH] = {};
-    strcat(dumpString, "buffer:\n\t</p>\n\t<font color=\"#00bfff\">\n\t\t");
-    strncat(dumpString, buffer,  strlen(buffer) - strlen(*curPos));
-    strcat(dumpString, "\n\t</font>\n");
-
-    strcat(dumpString, "\t<font color=\"#0e2466\">\n\t\t");
-    strcat(dumpString, *curPos);
-    strcat(dumpString, "\n\t</font>");
-
-    treeLog(dumpString);
 }

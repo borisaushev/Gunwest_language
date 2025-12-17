@@ -83,7 +83,7 @@ typedef enum dsl_error {
 
 const int MAX_LINE_LENGTH = 1000;
 
-const char* const TD_FILE_PATH = "../files/durden/durden.bb";
+const char* const TD_FILE_PATH = "../files/durden/kvadratka.bb";
 
 typedef enum TDtokenType {
     TD_PLUS           ,
