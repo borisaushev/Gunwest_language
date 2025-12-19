@@ -1,8 +1,8 @@
 #include "input.h"
 
 #include "common.h"
+#include "stack.h"
 #include "treeDump.h"
-
 
 static TDtoken_t* createNumberToken(TDtokenType_t type, double number, TDtokenContext_t* tokenContext) {
     assert(tokenContext);
@@ -115,19 +115,62 @@ void parseNumber(TDtokenContext_t *tokenContext) {
     }
 }
 
-bool searchForCommand(TDtokenContext_t *tokenContext, wchar_t input[MAX_LINE_LENGTH]) {
-    for (size_t i = 0; i < TD_TOKENS_INFO_SIZE; i++) {
-        if (!wcsicmp(input, TD_TOKENS_INFO[i].representation)) {
-            // wprintf(L"found: %ls\n", TD_TOKENS_INFO[i].representation);
-            TDtoken_t * newToken = createEmptyToken(TD_TOKENS_INFO[i].tokenType, tokenContext);
-            setNewToken(tokenContext, newToken);
-            return true;
-        }
+static int compareInts(unsigned int value1, unsigned int value2) {
+    if (value1 == value2) {
+        return 0;
     }
+    if (value1 < value2) {
+        return -1;
+    }
+    return 1;
+}
+
+static int compareCommandInfo(const void* voidInfo1, const void* voidInfo2) {
+    const TDtokenTypeInfo_t* info1 = (const TDtokenTypeInfo_t*) voidInfo1;
+    const TDtokenTypeInfo_t* info2 = (const TDtokenTypeInfo_t*) voidInfo2;
+
+    return compareInts(info1->representationHash, info2->representationHash);
+}
+
+bool searchForCommand(TDtokenContext_t *tokenContext, wchar_t input[MAX_LINE_LENGTH]) {
+    TDtokenTypeInfo_t wantedToken = {.representationHash=djb2StrHash(input)};
+
+    TDtokenTypeInfo_t* tokenInfo = (TDtokenTypeInfo_t*)
+            bsearch(&wantedToken, TD_TOKENS_INFO, TD_TOKENS_INFO_SIZE,
+                     sizeof(TDtokenTypeInfo_t), compareCommandInfo);
+
+    if (tokenInfo != NULL) {
+        // wprintf(L"found: %ls\n", TD_TOKENS_INFO[i].representation);
+        TDtoken_t * newToken = createEmptyToken(tokenInfo->tokenType, tokenContext);
+        setNewToken(tokenContext, newToken);
+        return true;
+    }
+
     return false;
 }
 
+static int compareTokens(const void* voidInfo1, const void* voidInfo2) {
+    const TDtokenTypeInfo_t* info1 = (const TDtokenTypeInfo_t*) voidInfo1;
+    const TDtokenTypeInfo_t* info2 = (const TDtokenTypeInfo_t*) voidInfo2;
+
+    return compareInts(info1->representationHash, info2->representationHash);
+}
+
+static void initTokensInfo() {
+    for (size_t i = 0; i < TD_TOKENS_INFO_SIZE; i++) {
+        if (TD_TOKENS_INFO[i].representationHash != djb2StrHash(TD_TOKENS_INFO[i].representation)) {
+            PRINTERR("hash doesnt match\n");
+            return;
+        }
+    }
+
+    qsort(TD_TOKENS_INFO, TD_TOKENS_INFO_SIZE,
+      sizeof(TDtokenTypeInfo_t), compareTokens);
+}
+
 TDtokenContext_t* parseTokens(wchar_t* buffer) {
+    initTokensInfo();
+
     TDtokenContext_t* tokenContext = (TDtokenContext_t*) calloc(1, sizeof(TDtokenContext_t));
     if (tokenContext == NULL) {
         PRINTERR("unable to allocate TDtokenContext_t");
@@ -157,8 +200,6 @@ TDtokenContext_t* parseTokens(wchar_t* buffer) {
 
     return tokenContext;
 }
-
-
 
 void skipSpaces(TDtokenContext_t* tokenContext) {
     while (iswspace(curChar(tokenContext))) {

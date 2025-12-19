@@ -148,28 +148,9 @@ typedef struct TDtokenTypeInfo {
     TDtokenType_t tokenType;
     const wchar_t* representation;
     const wchar_t* treeRepresentation;
+    unsigned int representationHash;
+    unsigned int treeHash;
 } TDtokenTypeInfo_t;
-
-const TDtokenTypeInfo_t TD_TOKENS_INFO[] = {
-    {TD_PLUS           , L"+"               , L"+"       },
-    {TD_MINUS          , L"-"               , L"-"       },
-    {TD_MULTIPLY       , L"*"               , L"*"       },
-    {TD_DIVIDE         , L"/"               , L"/"       },
-    {TD_LESS_THAN      , L"ВОТАФА"          , L"less"    },
-    {TD_NOT_EQUALS     , L"ОПП"             , L"!="      },
-    {TD_IF             , L"ШНЕЙНЕ"          , L"if"      },
-    {TD_WHILE          , L"ЕЩКЕРЕ"          , L"while"   },
-    {TD_SEMICOLON      , L"ФА"              , L";"       },
-    {TD_DECLARE        , L"ПЕПЕ"            , L"="       },
-    {TD_EQUALS         , L"ГЛОК"            , L"=="      },
-    {TD_OPENING_BRACKET, L"ЛЕВАЯ_НОГА"      , L"obracket"},
-    {TD_CLOSING_BRACKET, L"ПРАВАЯ_НОГА"     , L"cbracket"},
-    {TD_INPUT          , L"ХОЧУ_ВЫСТРЕЛ"    , L"scanf"   },
-    {TD_PRINT          , L"ЕСТЬ_ЧТО_СКАЗАТЬ", L"print"   },
-    {TD_SQRT           , L"АЙСГЕРГЕРБЕР"    , L"sqrt"    },
-    {TD_HLT            , L"ДРОПАЙ"          , L"hlt"     },
-};
-const size_t TD_TOKENS_INFO_SIZE = sizeof(TD_TOKENS_INFO)/sizeof(TDtokenTypeInfo_t);
 
 typedef enum nodeType {
     OPERATION_TYPE,

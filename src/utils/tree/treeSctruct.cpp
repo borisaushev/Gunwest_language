@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include "common.h"
+#include "input.h"
 #include "stack.h"
 #include "treeDump.h"
 
@@ -107,6 +108,10 @@ void initDslParametersValues() {
 
 treeNode_t* createParameter(wchar_t* param) {
     assert(param);
+    if (dslParametersCount > DSL_MAX_PARAMETERS) {
+        PRINTERR("too many variables!\n");
+        return NULL;
+    }
     treeNode_t* result = (treeNode_t*)calloc(1, sizeof(treeNode_t));
 
     unsigned int hash = djb2StrHash(param);
@@ -318,8 +323,8 @@ int saveTree(treeNode_t* root, const char* fileName) {
     return DSL_SUCCESS;
 }
 
-static void dumpBuffer(wchar_t **curPos, const wchar_t *buffer) {
-// #ifdef DEBUG
+void dumpBuffer(wchar_t **curPos, const wchar_t *buffer) {
+#ifdef DEBUG
     assert(curPos);
     assert(*curPos);
 
@@ -333,7 +338,7 @@ static void dumpBuffer(wchar_t **curPos, const wchar_t *buffer) {
     wcscat(dumpString, L"\n\t</font>");
 
     treeLog(dumpString);
-// #endif
+#endif
 }
 
 static void skipSpaces(wchar_t** curPos) {

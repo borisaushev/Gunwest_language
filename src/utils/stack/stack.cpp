@@ -277,7 +277,7 @@ int stackDestroy(stack_t* stack) {
 unsigned int djb2StrHash(const wchar_t *str) {
     unsigned int hash = 5381;
     for (size_t i = 0; i < wcslen(str); i++) {
-        hash = ((hash << 5) + hash) + (int) str[i];
+        hash = ((hash << 5) + hash) + towlower(str[i]);
     }
 
     return hash;
