@@ -248,14 +248,41 @@ void writeNodeRec(treeNode_t* node, FILE* file) {
     else {
         fwprintf(file, L"( \"");
         switch (node->nodeType) {
-            case EXPRESSION_TYPE:
-            case OPERATION_TYPE:
+            case EXPRESSION_TYPE: {
+                switch (getData(node).expressionType) {
+                case TD_IF_EXPRESSION_TYPE: {
+                    fwprintf(file, L"if");
+                    break;
+                }
+                case TD_WHILE_EXPRESSION_TYPE: {
+                    fwprintf(file, L"while");
+                    break;
+                }
+                case TD_DECLARATION: {
+                    fwprintf(file, L"=");
+                    break;
+                }
+                default: {
+                    PRINTERR("invalid expression type\n");
+                }
+                }
+                break;
+            }
             case LINKER_TYPE: {
+                fwprintf(file, L";");
+                break;
+            }
+            case OPERATION_TYPE: {
+                bool found = false;
                 for (size_t i = 0; i < TD_TOKENS_INFO_SIZE; i++) {
                     if (getData(node).operation == TD_TOKENS_INFO[i].tokenType) {
                         fwprintf(file, L"%ls", TD_TOKENS_INFO[i].treeRepresentation);
+                        found = true;
                         break;
                     }
+                }
+                if (!found) {
+                    PRINTERR("operation not found: %d\n", getData(node).operation);
                 }
                 break;
             }
@@ -272,8 +299,8 @@ void writeNodeRec(treeNode_t* node, FILE* file) {
                 return;
             };
         }
-        fwprintf(file, L"\" )");
 
+        fwprintf(file, L"\" ");
         writeNodeRec(getLeft(node), file);
         writeNodeRec(getRight(node), file);
         fwprintf(file, L") ");
@@ -289,4 +316,165 @@ int saveTree(treeNode_t* root, const char* fileName) {
 
     fclose(file);
     return DSL_SUCCESS;
+}
+
+static void dumpBuffer(wchar_t **curPos, const wchar_t *buffer) {
+// #ifdef DEBUG
+    assert(curPos);
+    assert(*curPos);
+
+    wchar_t dumpString[MAX_LINE_LENGTH] = {};
+    wcscat(dumpString, L"buffer:\n\t</p>\n\t<font color=\"#00bfff\">\n\t\t");
+    wcsncat(dumpString, buffer,  wcslen(buffer) - wcslen(*curPos));
+    wcscat(dumpString, L"\n\t</font>\n");
+
+    wcscat(dumpString, L"\t<font color=\"#0e2466\">\n\t\t");
+    wcscat(dumpString, *curPos);
+    wcscat(dumpString, L"\n\t</font>");
+
+    treeLog(dumpString);
+// #endif
+}
+
+static void skipSpaces(wchar_t** curPos) {
+    while (iswspace(**curPos)) {
+        (*curPos)++;
+    }
+}
+
+int parseNode(wchar_t** curPos, treeNode_t** cur, const wchar_t* bufferCopy, const wchar_t* buffer) {
+    skipSpaces(curPos);
+
+    treeLog(L"Parsing node");
+    dumpBuffer(curPos, bufferCopy);
+
+    if (**curPos == '(') {
+        treeLog(L"Read '(' ");
+        skipSpaces(curPos);
+        (*curPos)++;
+
+        treeLog(L"skipped '('");
+        dumpBuffer(curPos, bufferCopy);
+
+        skipSpaces(curPos);
+        if (**curPos != L'"') {
+            treeLog(L"expected '\"'");
+                    PRINTERR("Expected '\"', invalid character '%c' (%d) at %s:%d:%zu\n", **curPos, **curPos, TD_TREE_FILE_PATH, 1, (*curPos - buffer + 1));
+
+            RETURN_ERR(DSL_FILE_NOT_FOUND, "expected '\"'");
+        }
+
+        wchar_t* end = wcschr(*curPos + 1, L'"');
+        if (end == NULL) {
+            treeLog(L"Havent found the end of the string");
+            PRINTERR("Cannot find '\"', current character '%c' (%d) at %s:%d:%zu\n", **curPos, **curPos, TD_TREE_FILE_PATH, 1, (*curPos - buffer + 1));
+
+            RETURN_ERR(DSL_INVALID_INPUT, "invalid input tree");
+        }
+
+        *end = '\0';
+        wchar_t* str = wcsdup(*curPos + 1);
+        TDtokenType_t tokenType = TD_STRING;
+        if (iswdigit(str[0]) || (str[0] == L'-' && iswdigit(str[1]))) {
+            tokenType = TD_NUMBER;
+        }
+        else {
+            for (size_t i = 0; i < TD_TOKENS_INFO_SIZE; i++) {
+                if (!wcscmp(str, TD_TOKENS_INFO[i].treeRepresentation)) {
+                    tokenType = TD_TOKENS_INFO[i].tokenType;
+                    break;
+                }
+            }
+        }
+        switch (tokenType) {
+            case TD_NUMBER: {
+                int number = -1;
+                swscanf(str, L"%d", &number);
+                *cur = createNumber(number);
+                break;
+            }
+            case TD_STRING: {
+                *cur = createParameter(str);
+                break;
+            }
+            case TD_MINUS:
+            case TD_PLUS:
+            case TD_MULTIPLY:
+            case TD_NOT_EQUALS:
+            case TD_LESS_THAN:
+            case TD_HLT:
+            case TD_SQRT:
+            case TD_PRINT:
+            case TD_INPUT:
+            case TD_EQUALS:
+            case TD_DIVIDE: {
+                *cur = createOperation(tokenType, NULL, NULL);
+                break;
+            }
+            case TD_SEMICOLON: {
+                *cur = createLinker(NULL, NULL);
+                break;
+            }
+            case TD_IF: {
+                *cur = createExpression(TD_IF_EXPRESSION_TYPE, NULL, NULL);
+                break;
+            }
+            case TD_WHILE: {
+                *cur = createExpression(TD_WHILE_EXPRESSION_TYPE, NULL, NULL);
+                break;}
+            case TD_DECLARE: {
+                *cur = createExpression(TD_DECLARATION, NULL, NULL);
+                break;
+            }
+            default: {
+                PRINTERR("Unknown token type '%d'", tokenType);
+                break;
+            }
+        }
+
+        treeLog(L"Created new node");
+        TREE_DUMP(*cur, "Created node", DSL_SUCCESS);
+
+        *curPos = end + 1;
+
+        skipSpaces(curPos);
+        treeLog(L"skipped data");
+        dumpBuffer(curPos, bufferCopy);
+
+        treeLog(L"Parsing left subtree");
+        SAFE_CALL(parseNode(curPos, &(*cur)->left, bufferCopy, buffer));
+        treeLog(L"Parsed left subtree");
+        TREE_DUMP(*cur, "Parsed left subtree", DSL_SUCCESS);
+
+        treeLog(L"Parsing right subtree");
+        SAFE_CALL(parseNode(curPos, &(*cur)->right, bufferCopy, buffer));
+        treeLog(L"Parsed right subtree");
+        TREE_DUMP(*cur, "Parsed right subtree", DSL_SUCCESS);
+
+        skipSpaces(curPos);
+        if (**curPos != ')') {
+            PRINTERR("Expecting ')', Invalid character '%c' (%d) at %s:%d:%zu\n", **curPos, **curPos, TD_TREE_FILE_PATH, 1, (*curPos - buffer + 1));
+
+            RETURN_ERR(DSL_INVALID_INPUT, "expected ')'");
+        }
+        (*curPos)++;
+        skipSpaces(curPos);
+        treeLog(L"skipped ')'");
+        dumpBuffer(curPos, bufferCopy);
+
+        return DSL_SUCCESS;
+    }
+    else if (wcsncmp(*curPos, L"nil", 3) == 0) {
+            treeLog(L"found nil node");
+            *curPos += strlen("nil");
+
+            treeLog(L"Skipped nil");
+            dumpBuffer(curPos, bufferCopy);
+
+            return DSL_SUCCESS;
+        }
+    else {
+        PRINTERR("Expected '(' or nil, invalid character '%c', (%d) at %s:%d:%zu\n", **curPos, **curPos, TD_TREE_FILE_PATH, 1, (*curPos - buffer + 1));
+        RETURN_ERR(DSL_INVALID_INPUT, "invalid input tree");
+    }
 }

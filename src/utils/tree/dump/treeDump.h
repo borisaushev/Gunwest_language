@@ -14,7 +14,7 @@ const char* const TEX_HEADER =
         "\\section*{Behold! The Differentiator itself!}\n\n";
 
 int treeDump(treeNode_t* node, const char* desc, const char* file, const int line, const char* func, int code, const char* fillColor);
-int treeLog(const char* message, ...);
+int treeLog(const wchar_t* message, ...);
 
 unsigned int getColor(void* ptr);
 

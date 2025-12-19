@@ -1,8 +1,11 @@
-#ifndef TYLERDURDEN_ASMWRITE_H
-#define TYLERDURDEN_ASMWRITE_H
-#include "common.h"
+#ifndef ASMWRITE_H
+#define ASMWRITE_H
 
+#include <stdio.h>
+#include "treeSctruct.h"
 
-int writeAsm(treeNode_t* node);
+int writeAsmToFile(FILE* outFile, treeNode_t* node);
 
-#endif //TYLERDURDEN_ASMWRITE_H
+int writeAsm(const char* filename, treeNode_t* node);
+
+#endif // ASMWRITE_H

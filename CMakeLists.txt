@@ -37,7 +37,7 @@ function(set_option target_name)
             C:/Users/bossb/OneDrive/Desktop/ded/TXLib-master
     )
 
-    #     target_compile_definitions(${target_name} PRIVATE DEBUG)
+#         target_compile_definitions(${target_name} PRIVATE DEBUG DEBUG_TREE)
 
     target_compile_options(${target_name} PRIVATE
             -Wshadow

@@ -95,7 +95,7 @@ static treeNode_t* getBlockExpression(TDtokenContext_t* context) {
         }
         if (getCurToken(context)->type != TD_CLOSING_BRACKET) {
             PRINTERR("Expected closing bracket ')'. Invalid character at %s:%d:%d\n",
-                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_SOURCE_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
             return NULL;
         }
         DPRINTF("parsed block expression as numberExpression, closed bracket\n");
@@ -107,7 +107,7 @@ static treeNode_t* getBlockExpression(TDtokenContext_t* context) {
     result = getParameter(context);
     if (result == NULL) {
         PRINTERR("Expected number, variable or expression. Invalid character at %s:%d:%d\n",
-                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_SOURCE_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return NULL;
     }
 
@@ -212,15 +212,15 @@ static treeNode_t* parseDeclarationNode(TDtokenContext_t *context) {
     treeNode_t* parameter = getParameter(context);
     if (parameter == NULL) {
         DPRINTF("expected var name in lang expression. Invalid character at %s:%d:%d\n",
-                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_SOURCE_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return NULL;
     }
     DPRINTF("parsed parameter in getExpression\n");
     dumpContext(context);
 
-    if (getCurToken(context) == NULL || getCurToken(context)->type != TD_EQUALS) {
+    if (getCurToken(context) == NULL || getCurToken(context)->type != TD_DECLARE) {
         PRINTERR("expected equals sign in lang expression. Invalid character at %s:%d:%d\n",
-                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_SOURCE_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return NULL;
     }
     nextToken(context);
@@ -231,7 +231,7 @@ static treeNode_t* parseDeclarationNode(TDtokenContext_t *context) {
     treeNode_t* value = getValue(context);
     if (value == NULL) {
         PRINTERR("expected value in lang expression. Invalid character at %s:%d:%d\n",
-                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_SOURCE_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return NULL;
     }
 
@@ -276,7 +276,7 @@ static bool validateOpening(TDtokenContext_t* context, TDtokenType_t tokenType) 
 
     if (!verifyToken(context, TD_OPENING_BRACKET)) {
         PRINTERR("expected opening bracket. Invalid character at %s:%d:%d\n",
-                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_SOURCE_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return false;
     }
     nextToken(context);
@@ -287,7 +287,7 @@ static bool validateOpening(TDtokenContext_t* context, TDtokenType_t tokenType) 
 static bool validateClosing(TDtokenContext_t *context) {
     if (!verifyToken(context, TD_CLOSING_BRACKET)) {
         PRINTERR("expected closing bracket. Invalid character at %s:%d:%d\n",
-                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_SOURCE_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return false;
     }
     nextToken(context);
@@ -297,7 +297,7 @@ static bool validateClosing(TDtokenContext_t *context) {
 
     if (!verifyToken(context, TD_OPENING_BRACKET)) {
         PRINTERR("expected opening bracket. Invalid character at %s:%d:%d\n",
-                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_SOURCE_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return false;
     }
     nextToken(context);
@@ -313,7 +313,7 @@ static treeNode_t * getCode(TDtokenContext_t *context) {
 
     if (!verifyToken(context, TD_CLOSING_BRACKET)) {
         PRINTERR("expected closing bracket. Invalid character at %s:%d:%d\n",
-                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_SOURCE_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return NULL;
     }
     nextToken(context);
@@ -334,7 +334,7 @@ static treeNode_t * getConditionNode(TDtokenContext_t *context) {
     if (getCurToken(context) == NULL
         || (conditioner != TD_EQUALS && conditioner != TD_LESS_THAN && conditioner != TD_NOT_EQUALS)) {
         PRINTERR("expected conditional operator. Invalid character at %s:%d:%d\n",
-                 TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                 TD_SOURCE_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return NULL;
     }
     nextToken(context);
@@ -453,7 +453,7 @@ treeNode_t* buildTree(TDtokenContext_t* context) {
     treeNode* root = getProgram(context);
     if (getCurToken(context) != NULL) {
         PRINTERR("expected end of the program. Invalid character at %s:%d:%d\n",
-                         TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
+                         TD_SOURCE_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         dumpContext(context);
         return NULL;
     }

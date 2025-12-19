@@ -9,6 +9,40 @@
 #include <sys/stat.h>
 #include <filesystem>
 
+/*
+
+= ::= "ПЕПЕ"
+< ::= "ВОТАФА"
+!= ::= "ОПП"
+if ::= "ШНЕЙНЕ"
+while ::= "ЕЩКЕРЕ"
+; ::= "ФА"
+( ::= "ЛЕВАЯ_НОГА"
+) ::= "ПРАВАЯ_НОГА"
+input ::= "ХОЧУ_ВЫСТРЕЛ"
+print ::= "ЕСТЬ_ЧТО_СКАЗАТЬ"
+sqrt ::= "АЙСГЕРГЕРБЕР"
+hlt ::= "ДРОПАЙ"
+CONDITIONAL_OPERATOR ::= < | != | ==
+STD_COMMAND ::=  print | hlt
+STD_FUNCTION ::= input | (sqrt VALUE)
+
+
+PROGRAM = CMND+
+
+CMND ::= IFS | WHILE | (EXPRESSION;)
+EXPRESSION ::= VAR = (VALUE | STD_COMMAND)
+    VALUE ::= STD_FUNCTION | NUMBER_EXPR
+
+    NUMBER_EXPR ::= PRIMARY ([+-]PRIMARY)*
+    PRIMARY ::= BLOCK ([/*]BLOCK)*
+    BLOCK ::= NUMBER | VAR | '('NUMBER_EXPR')'
+
+    VAR = "[A-Za-z][A-Za-z0-9]*"
+IFS ::= if '(' NUMBER_EXPR CONDITIONAL_OPERATOR NUMBER_EXPR ')' '(' PROGRAM ')'
+WHILE ::= while '(' NUMBER_EXPR CONDITIONAL_OPERATOR NUMBER_EXPR ')' '(' PROGRAM ')'
+ */
+
 
 const char* const HTML_FILE_PATH = "..\\files\\logs\\tree\\tree_dump.html";
 const char* const DOT_FILE_PATH = "..\\files\\logs\\tree\\images\\tree.dot";
@@ -81,14 +115,15 @@ typedef enum dsl_error {
     DSL_CANT_OPEN_FILE
 } dsl_error_t;
 
-const int MAX_LINE_LENGTH = 1000;
+const int MAX_LINE_LENGTH = 10000;
 
 // const char* const TD_FILE_PATH = "../files/durden/kvadratka.bb";
-const char* const TD_FILE_PATH = "../files/durden/factorial.bb";
+const char* const TD_SOURCE_FILE_PATH = "../files/durden/factorial.bb";
 const char* const TD_TREE_FILE_PATH = "../files/durden/tree.txt";
+const char* const TD_ASM_OUTPUT_PATH = "C:/Users/bossb/CLionProjects/asm_calc/files/FA.asm";
 
 typedef enum TDtokenType {
-    TD_PLUS           ,
+    TD_PLUS=1         ,
     TD_MINUS          ,
     TD_MULTIPLY       ,
     TD_DIVIDE         ,
@@ -98,6 +133,7 @@ typedef enum TDtokenType {
     TD_WHILE          ,
     TD_SEMICOLON      ,
     TD_EQUALS         ,
+    TD_DECLARE        ,
     TD_OPENING_BRACKET,
     TD_CLOSING_BRACKET,
     TD_INPUT          ,
@@ -115,22 +151,23 @@ typedef struct TDtokenTypeInfo {
 } TDtokenTypeInfo_t;
 
 const TDtokenTypeInfo_t TD_TOKENS_INFO[] = {
-    {TD_PLUS           , L"+"               , L"+"    },
-    {TD_MINUS          , L"-"               , L"-"    },
-    {TD_MULTIPLY       , L"*"               , L"*"    },
-    {TD_DIVIDE         , L"/"               , L"/"    },
-    {TD_LESS_THAN      , L"ВОТАФА"          , L"<"    },
-    {TD_NOT_EQUALS     , L"ОПП"             , L"!="   },
-    {TD_IF             , L"ШНЕЙНЕ"          , L"if"   },
-    {TD_WHILE          , L"ЕЩКЕРЕ"          , L"while"},
-    {TD_SEMICOLON      , L"ФА"              , L";"    },
-    {TD_EQUALS         , L"ПЕПЕ"            , L"="    },
-    {TD_OPENING_BRACKET, L"ЛЕВАЯ_НОГА"      , L"{"    },
-    {TD_CLOSING_BRACKET, L"ПРАВАЯ_НОГА"     , L"}"    },
-    {TD_INPUT          , L"ХОЧУ_ВЫСТРЕЛ"    , L"scanf"},
-    {TD_PRINT          , L"ЕСТЬ_ЧТО_СКАЗАТЬ", L"print"},
-    {TD_SQRT           , L"АЙСГЕРГЕРБЕР"    , L"sqrt" },
-    {TD_HLT            , L"ДРОПАЙ"          , L"hlt"  },
+    {TD_PLUS           , L"+"               , L"+"       },
+    {TD_MINUS          , L"-"               , L"-"       },
+    {TD_MULTIPLY       , L"*"               , L"*"       },
+    {TD_DIVIDE         , L"/"               , L"/"       },
+    {TD_LESS_THAN      , L"ВОТАФА"          , L"less"    },
+    {TD_NOT_EQUALS     , L"ОПП"             , L"!="      },
+    {TD_IF             , L"ШНЕЙНЕ"          , L"if"      },
+    {TD_WHILE          , L"ЕЩКЕРЕ"          , L"while"   },
+    {TD_SEMICOLON      , L"ФА"              , L";"       },
+    {TD_DECLARE        , L"ПЕПЕ"            , L"="       },
+    {TD_EQUALS         , L"ГЛОК"            , L"=="      },
+    {TD_OPENING_BRACKET, L"ЛЕВАЯ_НОГА"      , L"obracket"},
+    {TD_CLOSING_BRACKET, L"ПРАВАЯ_НОГА"     , L"cbracket"},
+    {TD_INPUT          , L"ХОЧУ_ВЫСТРЕЛ"    , L"scanf"   },
+    {TD_PRINT          , L"ЕСТЬ_ЧТО_СКАЗАТЬ", L"print"   },
+    {TD_SQRT           , L"АЙСГЕРГЕРБЕР"    , L"sqrt"    },
+    {TD_HLT            , L"ДРОПАЙ"          , L"hlt"     },
 };
 const size_t TD_TOKENS_INFO_SIZE = sizeof(TD_TOKENS_INFO)/sizeof(TDtokenTypeInfo_t);
 

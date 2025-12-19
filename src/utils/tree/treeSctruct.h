@@ -42,4 +42,7 @@ int validateTree(treeNode_t* root);
 void destroyTree(treeNode_t* root);
 int saveTree(treeNode_t* root, const char* fileName);
 
+int parseNode(wchar_t** curPos, treeNode_t** cur, const wchar_t* bufferCopy, const wchar_t* buffer);
+
+
 #endif //TREE_TREESCTRUCT_H

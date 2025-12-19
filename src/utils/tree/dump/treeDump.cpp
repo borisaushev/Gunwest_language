@@ -13,14 +13,13 @@ static char* transliterate(const wchar_t* wstr) {
     if (!wstr) return NULL;
 
     size_t len = wcslen(wstr);
-    char* result = (char*)malloc(len * 2 + 1); // Максимум 2 символа на кириллицу
+    char* result = (char*)malloc(len * 2 + 1);
     if (!result) return NULL;
 
-    int pos = 0;
+    size_t pos = 0;
     for (size_t i = 0; i < len; i++) {
         wchar_t c = towupper(wstr[i]);
 
-        // Кириллица верхний регистр
         if (c >= L'А' && c <= L'Я') {
             const char* trans[] = {
                 "A","B","V","G","D","E","ZH","Z","I","Y","K","L","M",
@@ -94,7 +93,7 @@ static void addNodeInfo(FILE* file, int index, treeNode_t* node, const char* con
         }
         case PARAM_TYPE: {
             dslParameter_t* param = getData(node).parameter;
-            fprintf(file, "| type: PARAMETER | %s = %d | ", transliterate(param->name), param->value);
+            fprintf(file, "| type: PARAMETER | %s | ", transliterate(param->name));
             break;
         }
         case LINKER_TYPE: {
@@ -160,7 +159,7 @@ static void fillHtmlHeader(const char *desc, const char *fileName, const int lin
 }
 
 static size_t counter = 0;
-int treeLog(const char* message, ...) {
+int treeLog(const wchar_t* message, ...) {
     assert(message);
     #ifdef DEBUG_TREE
         FILE* htmlFile = fopen(HTML_FILE_PATH, counter++ == 0 ? "w" : "a");
@@ -169,13 +168,13 @@ int treeLog(const char* message, ...) {
         }
 
         // Стиль для всего сообщения
-        fprintf(htmlFile, "\n<div style='font-size: 18px; line-height: 1.6; margin: 12px 0; padding: 12px; background: #f8f9fa; border-left: 5px solid #28a745; border-radius: 4px; font-family: \"Courier New\", monospace; font-weight: bold;'>\n\t");
+        fwprintf(htmlFile, L"\n<div style='font-size: 18px; line-height: 1.6; margin: 12px 0; padding: 12px; background: #f8f9fa; border-left: 5px solid #28a745; border-radius: 4px; font-family: \"Courier New\", monospace; font-weight: bold;'>\n\t");
         va_list args;
         va_start(args, message);
-        vfprintf(htmlFile, message, args);
+        vfwprintf(htmlFile, message, args);
         va_end(args);
 
-        fprintf(htmlFile, "\n</div>\n");
+        fwprintf(htmlFile, L"\n</div>\n");
         fclose(htmlFile);
     #endif
     return TR_SUCCESS;

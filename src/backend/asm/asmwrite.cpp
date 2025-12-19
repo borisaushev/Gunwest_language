@@ -1,11 +1,12 @@
 #include "asmwrite.h"
-
 #include "common.h"
 #include "treeDump.h"
 #include "treeSctruct.h"
+#include <wchar.h>
 
 int label = 0;
-wchar_t getReg(treeNode_t * param) {
+
+static wchar_t getReg(treeNode_t * param) {
     assert(param);
     assert(param->nodeType == PARAM_TYPE);
 
@@ -13,22 +14,22 @@ wchar_t getReg(treeNode_t * param) {
     return (wchar_t) (L'A' + index);
 }
 
-static int writeNumberOperation(treeNode_t *node) {
+static int writeNumberOperation(FILE* outFile, treeNode_t *node) {
     switch (getData(node).operation) {
         case TD_PLUS: {
-            wprintf(L"ADD\n");
+            fwprintf(outFile, L"ADD\n");
             break;
         }
         case TD_MINUS: {
-            wprintf(L"SUB\n");
+            fwprintf(outFile, L"SUB\n");
             break;
         }
         case TD_MULTIPLY: {
-            wprintf(L"MUL\n");
+            fwprintf(outFile, L"MUL\n");
             break;
         }
         case TD_DIVIDE: {
-            wprintf(L"DIV\n");
+            fwprintf(outFile, L"DIV\n");
             break;
         }
         default: {
@@ -40,22 +41,23 @@ static int writeNumberOperation(treeNode_t *node) {
     return DSL_SUCCESS;
 }
 
-int writeNumberExpression(treeNode_t* node) {
+static int writeNumberExpression(FILE* outFile, treeNode_t* node) {
     assert(node);
     TREE_DUMP(node, "writing Number Expression", DSL_SUCCESS);
+
     switch (node->nodeType) {
         case NUMBER_TYPE: {
-            wprintf(L"PUSH %d\n", getNumber(node));
+            fwprintf(outFile, L"PUSH %d\n", getNumber(node));
             return DSL_SUCCESS;
         }
         case OPERATION_TYPE: {
-            SAFE_CALL(writeNumberExpression(getLeft(node)));
-            SAFE_CALL(writeNumberExpression(getRight(node)));
-            SAFE_CALL(writeNumberOperation(node));
+            SAFE_CALL(writeNumberExpression(outFile, getLeft(node)));
+            SAFE_CALL(writeNumberExpression(outFile, getRight(node)));
+            SAFE_CALL(writeNumberOperation(outFile, node));
             return DSL_SUCCESS;
         }
         case PARAM_TYPE: {
-            wprintf(L"PUSHREG %lcX\n", getReg(node));
+            fwprintf(outFile, L"PUSHREG %lcX\n", getReg(node));
             return DSL_SUCCESS;
         }
         default: {
@@ -66,21 +68,21 @@ int writeNumberExpression(treeNode_t* node) {
     return DSL_SUCCESS;
 }
 
-static int writeValue(treeNode_t* node) {
+static int writeValue(FILE* outFile, treeNode_t* node) {
     if (getData(node).operation == TD_INPUT) {
-        wprintf(L"IN\n");
+        fwprintf(outFile, L"IN\n");
     }
     else if (getData(node).operation == TD_SQRT) {
-        SAFE_CALL(writeValue(getLeft(node)));
-        wprintf(L"SQRT\n");
+        SAFE_CALL(writeValue(outFile, getLeft(node)));
+        fwprintf(outFile, L"SQRT\n");
     }
     else {
-        SAFE_CALL(writeNumberExpression(node));
+        SAFE_CALL(writeNumberExpression(outFile, node));
     }
     return DSL_SUCCESS;
 }
 
-static int writeIf(treeNode_t *node) {
+static int writeIf(FILE* outFile, treeNode_t *node) {
     treeNode_t* condition = getLeft(node);
     treeNode_t* code = getRight(node);
     if (condition == NULL) {
@@ -92,35 +94,39 @@ static int writeIf(treeNode_t *node) {
         return DSL_INVALID_INPUT;
     }
 
-    SAFE_CALL(writeNumberExpression(getLeft(condition)));
-    SAFE_CALL(writeNumberExpression(getRight(condition)));
+    fwprintf(outFile, L"\n; if condition:\n");
+    SAFE_CALL(writeNumberExpression(outFile, getLeft(condition)));
+    SAFE_CALL(writeNumberExpression(outFile, getRight(condition)));
 
     int labelVal = label++;
     switch (getData(condition).operation) {
         case TD_EQUALS: {
-            wprintf(L"JNE");
+            fwprintf(outFile, L"JNE");
             break;
         }
         case TD_NOT_EQUALS: {
-            wprintf(L"JE");
+            fwprintf(outFile, L"JE");
             break;
         }
         case TD_LESS_THAN: {
-            wprintf(L"JAE");
+            fwprintf(outFile, L"JAE");
             break;
         }
         default: {
+            PRINTERR("invalid operation: %d\n", getData(condition).operation);
             RETURN_ERR(DSL_INVALID_INPUT, "invalid operation");
         }
     }
-    wprintf(L" :IF_END_%d\n", labelVal);
-    SAFE_CALL(writeAsm(code));
-    wprintf(L":IF_END_%d\n", labelVal);
+    fwprintf(outFile, L" :IF_END_%d\n", labelVal);
+
+    fwprintf(outFile, L"; if code:\n");
+    SAFE_CALL(writeAsmToFile(outFile, code));
+    fwprintf(outFile, L":IF_END_%d\n\n", labelVal);
 
     return DSL_SUCCESS;
 }
 
-static int writeWhile(treeNode_t *node) {
+static int writeWhile(FILE* outFile, treeNode_t *node) {
     treeNode_t* condition = getLeft(node);
     treeNode_t* code = getRight(node);
     if (condition == NULL) {
@@ -133,38 +139,41 @@ static int writeWhile(treeNode_t *node) {
     }
 
     int labelVal = label++;
-    wprintf(L":WHILE_START_%d\n", labelVal);
-    SAFE_CALL(writeNumberExpression(getLeft(condition)));
-    SAFE_CALL(writeNumberExpression(getRight(condition)));
-
+    fwprintf(outFile, L"\n:WHILE_START_%d\n", labelVal);
+    fwprintf(outFile, L";while condition\n");
+    SAFE_CALL(writeNumberExpression(outFile, getLeft(condition)));
+    SAFE_CALL(writeNumberExpression(outFile, getRight(condition)));
     switch (getData(condition).operation) {
         case TD_EQUALS: {
-            wprintf(L"JNE");
+            fwprintf(outFile, L"JNE");
             break;
         }
         case TD_NOT_EQUALS: {
-            wprintf(L"JE");
+            fwprintf(outFile, L"JE");
             break;
         }
         case TD_LESS_THAN: {
-            wprintf(L"JAE");
+            fwprintf(outFile, L"JAE");
             break;
         }
         default: {
             RETURN_ERR(DSL_INVALID_INPUT, "invalid operation");
         }
     }
-    wprintf(L" :WHILE_END_%d\n", labelVal);
-    SAFE_CALL(writeAsm(code));
-    wprintf(L"JMP :WHILE_START_%d\n", labelVal);
-    wprintf(L":WHILE_END_%d\n", labelVal);
+    fwprintf(outFile, L" :WHILE_END_%d\n", labelVal);
+    fwprintf(outFile, L";while code:\n");
+    SAFE_CALL(writeAsmToFile(outFile, code));
+    fwprintf(outFile, L"JMP :WHILE_START_%d\n", labelVal);
+    fwprintf(outFile, L":WHILE_END_%d\n\n", labelVal);
 
     return DSL_SUCCESS;
 }
 
-static int writeDeclaration(treeNode_t *node) {
+static int writeDeclaration(FILE* outFile, treeNode_t *node) {
     treeNode_t* value = getRight(node);
     treeNode_t* parameter = getLeft(node);
+
+    fwprintf(outFile, L"\n; declaration:\n");
     if (value == NULL) {
         PRINTERR("expected value in declaration\n");
         return DSL_INVALID_INPUT;
@@ -173,13 +182,13 @@ static int writeDeclaration(treeNode_t *node) {
         PRINTERR("expected parameter in declaration\n");
         return DSL_INVALID_INPUT;
     }
-    SAFE_CALL(writeValue(value));
-    wprintf(L"POPREG %lcX\n", getReg(parameter));
+    SAFE_CALL(writeValue(outFile, value));
+    fwprintf(outFile, L"POPREG %lcX\n", getReg(parameter));
 
     return DSL_SUCCESS;
 }
 
-int writeOperation(treeNode_t *node) {
+static int writeOperation(FILE* outFile, treeNode_t *node) {
     switch (getData(node).operation) {
         case TD_PRINT: {
             treeNode_t* param = getLeft(node);
@@ -187,12 +196,12 @@ int writeOperation(treeNode_t *node) {
                 PRINTERR("invalid print argument");
                 return DSL_INVALID_INPUT;
             }
-            wprintf(L"PUSHREG %lcX\n", getReg(param));
-            wprintf(L"OUT\n");
+            fwprintf(outFile, L"PUSHREG %lcX\n", getReg(param));
+            fwprintf(outFile, L"OUT\n");
             break;
         }
         case TD_HLT: {
-            wprintf(L"HLT\n");
+            fwprintf(outFile, L"HLT\n");
             break;
         }
         default: {
@@ -204,18 +213,18 @@ int writeOperation(treeNode_t *node) {
     return DSL_SUCCESS;
 }
 
-static int writeExpression(treeNode_t *node) {
+static int writeExpression(FILE* outFile, treeNode_t *node) {
     switch (getData(node).expressionType) {
         case TD_DECLARATION: {
-            SAFE_CALL(writeDeclaration(node));
+            SAFE_CALL(writeDeclaration(outFile, node));
             break;
         }
         case TD_IF_EXPRESSION_TYPE: {
-            SAFE_CALL(writeIf(node));
+            SAFE_CALL(writeIf(outFile, node));
             break;
         }
         case TD_WHILE_EXPRESSION_TYPE: {
-            SAFE_CALL(writeWhile(node));
+            SAFE_CALL(writeWhile(outFile, node));
             break;
         }
         default: {
@@ -227,23 +236,30 @@ static int writeExpression(treeNode_t *node) {
     return DSL_SUCCESS;
 }
 
-int writeAsm(treeNode_t* node) {
+int writeAsmToFile(FILE* outFile, treeNode_t* node) {
+    if (outFile == NULL) {
+        PRINTERR("Output file is NULL\n");
+        return DSL_INVALID_INPUT;
+    }
+
     if (node == NULL) {
         return DSL_SUCCESS;
     }
-    TREE_DUMP(node, "writing asm", DSL_SUCCESS);
+
+    TREE_DUMP(node, "writing asm to file", DSL_SUCCESS);
+
     switch (node->nodeType) {
         case LINKER_TYPE: {
-            SAFE_CALL(writeAsm(getRight(node)));
-            SAFE_CALL(writeAsm(getLeft(node)));
+            SAFE_CALL(writeAsmToFile(outFile, getRight(node)));
+            SAFE_CALL(writeAsmToFile(outFile, getLeft(node)));
             break;
         }
         case OPERATION_TYPE: {
-            SAFE_CALL(writeOperation(node));
+            SAFE_CALL(writeOperation(outFile, node));
             break;
         }
         case EXPRESSION_TYPE: {
-            SAFE_CALL(writeExpression(node));
+            SAFE_CALL(writeExpression(outFile, node));
             break;
         }
         default: {
@@ -251,5 +267,18 @@ int writeAsm(treeNode_t* node) {
             return DSL_INVALID_INPUT;
         }
     }
+    return DSL_SUCCESS;
+}
+
+int writeAsm(const char* filename, treeNode_t* node) {
+    FILE* outFile = fopen(filename, "w");
+    if (outFile == NULL) {
+        PRINTERR("Cannot open file %s for writing\n", filename);
+        return DSL_FILE_NOT_FOUND;
+    }
+
+    SAFE_CALL(writeAsmToFile(outFile, node));
+    fclose(outFile);
+
     return DSL_SUCCESS;
 }

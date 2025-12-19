@@ -2,39 +2,6 @@
 #define AKINATOR_AKINATORINPUT_H
 #include "treeSctruct.h"
 
-/*
-
-= ::= "ПЕПЕ"
-< ::= "ВОТАФА"
-!= ::= "ОПП"
-if ::= "ШНЕЙНЕ"
-while ::= "ЕЩКЕРЕ"
-; ::= "ФА"
-( ::= "ЛЕВАЯ_НОГА"
-) ::= "ПРАВАЯ_НОГА"
-input ::= "ХОЧУ_ВЫСТРЕЛ"
-print ::= "ЕСТЬ_ЧТО_СКАЗАТЬ"
-sqrt ::= "АЙСГЕРГЕРБЕР"
-hlt ::= "ДРОПАЙ"
-CONDITIONAL_OPERATOR ::= < | != | ==
-STD_COMMAND ::=  print | hlt
-STD_FUNCTION ::= input | (sqrt VALUE)
-
-
-PROGRAM = CMND+
-
-CMND ::= IFS | WHILE | (EXPRESSION;)
-EXPRESSION ::= VAR = (VALUE | STD_COMMAND)
-    VALUE ::= STD_FUNCTION | NUMBER_EXPR
-
-    NUMBER_EXPR ::= PRIMARY ([+-]PRIMARY)*
-    PRIMARY ::= BLOCK ([/*]BLOCK)*
-    BLOCK ::= NUMBER | VAR | '('NUMBER_EXPR')'
-
-    VAR = "[A-Za-z][A-Za-z0-9]*"
-IFS ::= if '(' NUMBER_EXPR CONDITIONAL_OPERATOR NUMBER_EXPR ')' '(' PROGRAM ')'
-WHILE ::= while '(' NUMBER_EXPR CONDITIONAL_OPERATOR NUMBER_EXPR ')' '(' PROGRAM ')'
- */
 
 typedef union TDtokenValue {
     wchar_t* str;
