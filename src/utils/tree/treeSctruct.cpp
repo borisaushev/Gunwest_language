@@ -241,3 +241,52 @@ void destroyTree(treeNode_t* root) {
     destroyNode(root);
 }
 
+void writeNodeRec(treeNode_t* node, FILE* file) {
+    if (node == NULL) {
+        fwprintf(file, L"nil ");
+    }
+    else {
+        fwprintf(file, L"( \"");
+        switch (node->nodeType) {
+            case EXPRESSION_TYPE:
+            case OPERATION_TYPE:
+            case LINKER_TYPE: {
+                for (size_t i = 0; i < TD_TOKENS_INFO_SIZE; i++) {
+                    if (getData(node).operation == TD_TOKENS_INFO[i].tokenType) {
+                        fwprintf(file, L"%ls", TD_TOKENS_INFO[i].treeRepresentation);
+                        break;
+                    }
+                }
+                break;
+            }
+            case NUMBER_TYPE: {
+                fwprintf(file, L"%d", getData(node).number);
+                break;
+            }
+            case PARAM_TYPE: {
+                fwprintf(file, L"%ls", getData(node).parameter->name);
+                break;
+            }
+            default: {
+                PRINTERR("invalid node type");
+                return;
+            };
+        }
+        fwprintf(file, L"\" )");
+
+        writeNodeRec(getLeft(node), file);
+        writeNodeRec(getRight(node), file);
+        fwprintf(file, L") ");
+    }
+}
+
+int saveTree(treeNode_t* root, const char* fileName) {
+    FILE* file = fopen(fileName, "w");
+    if (file == NULL) {
+        RETURN_ERR(DSL_NULL_PTR, "unable to open file");
+    }
+    writeNodeRec(root, file);
+
+    fclose(file);
+    return DSL_SUCCESS;
+}

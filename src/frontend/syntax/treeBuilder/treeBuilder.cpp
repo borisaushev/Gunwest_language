@@ -211,7 +211,7 @@ static treeNode_t * parsePrintNode(TDtokenContext_t *context) {
 static treeNode_t* parseDeclarationNode(TDtokenContext_t *context) {
     treeNode_t* parameter = getParameter(context);
     if (parameter == NULL) {
-        PRINTERR("expected var name in lang expression. Invalid character at %s:%d:%d\n",
+        DPRINTF("expected var name in lang expression. Invalid character at %s:%d:%d\n",
                  TD_FILE_PATH, getCurToken(context)->line, getCurToken(context)->index);
         return NULL;
     }
@@ -245,7 +245,7 @@ treeNode_t* getExpression(TDtokenContext_t* context) {
     DPRINTF("parsing lang expression\n");
 
     if (getCurToken(context) == NULL) {
-        PRINTERR("null token, unable to parse language expression\n");
+        DPRINTF("null token, unable to parse language expression\n");
         return NULL;
     }
 

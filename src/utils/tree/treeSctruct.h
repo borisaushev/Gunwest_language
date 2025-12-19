@@ -40,6 +40,6 @@ void setNodeType(treeNode_t* node, nodeType_t nodeType);
 
 int validateTree(treeNode_t* root);
 void destroyTree(treeNode_t* root);
-
+int saveTree(treeNode_t* root, const char* fileName);
 
 #endif //TREE_TREESCTRUCT_H

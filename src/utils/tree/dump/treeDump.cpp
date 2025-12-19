@@ -63,7 +63,7 @@ static void addNodeInfo(FILE* file, int index, treeNode_t* node, const char* con
             fprintf(file, "| type: OPERATION | val: ");
             for (size_t i = 0; i < TD_TOKENS_INFO_SIZE; i++) {
                 if (TD_TOKENS_INFO[i].tokenType == node->data.operation) {
-                    fprintf(file, "%s", transliterate(TD_TOKENS_INFO[i].representation));
+                    fprintf(file, "%s", transliterate(TD_TOKENS_INFO[i].treeRepresentation));
                     break;
                 }
             }

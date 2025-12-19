@@ -1,18 +1,16 @@
 cmake_minimum_required(VERSION 4.0)
-project(TylerDurden)
-
-if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "11.0")
-    message(WARNING "Your MinGW version might be too old. Consider upgrading.")
-else ()
-    message("version: ${CMAKE_CXX_COMPILER_VERSION}")
-endif()
-
+project(FALANG)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-add_executable(TylerDurden ${SOURCES})
+# Найти все .cpp файлы
+file(GLOB_RECURSE UTILS "src/utils/*.cpp")
+
+file(GLOB_RECURSE FRONTEND_SOURCES "src/frontend/*.cpp")
+add_executable(frontend ${FRONTEND_SOURCES} ${UTILS})
+
+file(GLOB_RECURSE BACKEND_SOURCES "src/backend/*.cpp")
+add_executable(backend ${BACKEND_SOURCES} ${UTILS})
 
 # Найти ВСЕ подпапки в include рекурсивно
 file(GLOB_RECURSE INCLUDE_DIRS
@@ -39,7 +37,7 @@ function(set_option target_name)
             C:/Users/bossb/OneDrive/Desktop/ded/TXLib-master
     )
 
-    target_compile_definitions(${target_name} PRIVATE DEBUG DEBUG_TREE)
+    #     target_compile_definitions(${target_name} PRIVATE DEBUG)
 
     target_compile_options(${target_name} PRIVATE
             -Wshadow
@@ -59,7 +57,6 @@ function(set_option target_name)
             -Wextra
             -Wall
             -g
-            -static
             -pipe
             -fexceptions
             -Wcast-qual
@@ -82,9 +79,12 @@ function(set_option target_name)
             -Wwrite-strings
             -Werror=vla
             -D_EJUDGE_CLIENT_SIDE
+            -D NDEBUG
+            -O3
     )
 endfunction()
 
-set_option(TylerDurden)
+set_option(frontend)
+set_option(backend)
 
 message("Include paths: ${INCLUDE_PATHS}")

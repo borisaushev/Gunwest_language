@@ -31,7 +31,7 @@ int main() {
     TDtokenContext_t* tokenContext = parseTokens(buffer);
     treeNode_t* root = buildTree(tokenContext);
 
-    SAFE_CALL(writeAsm(root));
+    saveTree(root, TD_TREE_FILE_PATH);
 
     return 0;
 }
